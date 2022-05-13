@@ -2,7 +2,7 @@
 This repository contains the source code for the Buildbotics CNC Controller.
 See [buildbotics.com](https://buildbotics.com/) for more information.
 
-![Buildboitcs CNC Controller](docs/buildbotics_controller.png)
+![Buildbotics CNC Controller](docs/buildbotics_controller.png)
 
 ## Overview
 ![Buildbotics architecture overview](docs/buildbotics_architecture_overview.png)
