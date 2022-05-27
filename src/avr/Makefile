@@ -1,4 +1,4 @@
-# Makefile for the project Bulidbotics firmware
+# Makefile for the project Buildbotics firmware
 PROJECT  = bbctrl-avr-firmware
 MCU      = atxmega192a3u
 CLOCK    = 32000000
