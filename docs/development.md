@@ -6,13 +6,13 @@ Debian Linux are not supported.
 
 ## Installing the Development Prerequisites
 
-On a Debian Linux (9.6.0 stable) system install the required packages:
+On a Debian Linux (11.3.0 stable) system install the required packages:
 
     sudo apt-get update
     sudo apt-get install -y build-essential git wget binfmt-support qemu \
       parted gcc-avr avr-libc avrdude pylint3 python3 python3-tornado curl \
       unzip python3-setuptools gcc-arm-linux-gnueabihf bc sudo
-    curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
+    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
     sudo apt-get install -y nodejs
 
 ## Getting the Source Code
