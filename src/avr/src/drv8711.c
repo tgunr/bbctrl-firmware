@@ -247,7 +247,7 @@ static spi_state_t _driver_spi_next(drv8711_driver_t *drv) {
 
     // NOTE If there is a power fault and the drivers are not powered
     // then the status flags will read 0xff but the motor fault line will
-    // not be asserted.  So, fault flags are not valid with out motor fault.
+    // not be asserted.  So, fault flags are not valid without motor fault.
     // Also, a real stall cannot occur if the driver is inactive.
     bool active = _driver_active(drv);
     uint8_t mask =

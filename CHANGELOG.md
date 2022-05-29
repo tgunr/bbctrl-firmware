@@ -135,7 +135,7 @@ Buildbotics CNC Controller Firmware Changelog
 
 ## v0.4.10
  - Fix demo password check
- - Fix bug were fast clicks could cause jog commands to arrive out of order.
+ - Fix bug where fast clicks could cause jog commands to arrive out of order.
  - Fix bug where planner position may not sync after jog.
  - Show power shutdown on indicators page.
  - Show all motors in shutdown when in power shutdown.
@@ -422,7 +422,7 @@ Buildbotics CNC Controller Firmware Changelog
  - Log debug messages to console in developer mode.
  - Fixed AVR log message source.
  - Fixed step correction.
- - JOGGING, HOMMING and MDI states.
+ - JOGGING, HOMING and MDI states.
  - Fixed position problem with rapid MDI entry.
 
 ## v0.3.8

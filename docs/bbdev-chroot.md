@@ -29,7 +29,7 @@ into the chroot.
     sudo chroot bbdev
     cd /opt
 
-Now, follow the instructions in [development.md](development.md) from with in
+Now, follow the instructions in [development.md](development.md) from within
 the chroot.
 
 # Exit the chroot

@@ -1,4 +1,4 @@
-# Makefile for the project Bulidbotics bootloader
+# Makefile for the project Buildbotics bootloader
 PROJECT         = bbctrl-avr-boot
 MCU             = atxmega192a3u
 CLOCK           = 32000000
