@@ -11,9 +11,8 @@ RESOURCES  := $(shell find src/resources -type f)
 RESOURCES  := $(patsubst src/resources/%,$(TARGET_DIR)/%,$(RESOURCES))
 TEMPLS     := $(wildcard src/pug/templates/*.pug)
 
-SHARE           := share
 AVR_FIRMWARE    := src/avr/bbctrl-avr-firmware.hex
-CAMOTICS_MOD    := $(SHARE)/camotics/build/camotics.so
+CAMOTICS_MOD    := share/camotics/build/camotics.so
 CAMOTICS_TARGET := src/py/bbctrl/camotics.so
 
 RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\\#* \*~ .\\\#\*
