@@ -5,8 +5,7 @@ PUG        := $(NODE_MODS)/.bin/pug
 STYLUS     := $(NODE_MODS)/.bin/stylus
 
 TARGET_DIR := build/http
-HTML       := index
-HTML       := $(patsubst %,$(TARGET_DIR)/%.html,$(HTML))
+HTML       := $(TARGET_DIR)/index.html
 RESOURCES  := $(shell find src/resources -type f)
 RESOURCES  := $(patsubst src/resources/%,$(TARGET_DIR)/%,$(RESOURCES))
 TEMPLS     := $(wildcard src/pug/templates/*.pug)
@@ -26,8 +25,6 @@ BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
 BETA_PKG_NAME := bbctrl-$(BETA_VERSION)
 
 SUBPROJECTS := avr boot pwr2 jig
-SUBPROJECTS := $(patsubst %,src/%,$(SUBPROJECTS))
-
 WATCH := src/pug src/pug/templates src/stylus src/js src/resources Makefile
 WATCH += src/static
 
@@ -40,14 +37,8 @@ PASSWORD=buildbotics
 endif
 
 
-all: html resources $(SUBPROJECTS)
-
-.PHONY: $(SUBPROJECTS)
-$(SUBPROJECTS):
-	$(MAKE) -C $@
-
-html: $(HTML)
-resources: $(RESOURCES)
+all: $(HTML) $(RESOURCES)
+	@for SUB in $(SUBPROJECTS); do $(MAKE) -C src/$$SUB; done
 
 demo: html resources bbemu
 	ln -sf ../../../$(TARGET_DIR) src/py/bbctrl/http
@@ -156,7 +147,7 @@ tidy:
 clean: tidy
 	rm -rf build html dist
 	@for SUB in $(SUBPROJECTS); do \
-	  $(MAKE) -C $$SUB clean; \
+	  $(MAKE) -C src/$$SUB clean; \
 	done
 
 dist-clean: clean
