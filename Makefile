@@ -58,7 +58,7 @@ bbemu:
 	$(MAKE) -C src/avr/emu
 
 pkg: all $(AVR_FIRMWARE) bbserial
-	cp -a $(SHARE)/camotics/tpl_lib src/py/bbctrl/
+	cp -a share/camotics/tpl_lib src/py/bbctrl/
 	./setup.py sdist
 
 beta-pkg: pkg
