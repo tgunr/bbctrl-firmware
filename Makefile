@@ -5,7 +5,8 @@ PUG        := $(NODE_MODS)/.bin/pug
 STYLUS     := $(NODE_MODS)/.bin/stylus
 
 TARGET_DIR := build/http
-HTML       := $(TARGET_DIR)/index.html
+HTML       := index
+HTML       := $(patsubst %,$(TARGET_DIR)/%.html,$(HTML))
 RESOURCES  := $(shell find src/resources -type f)
 RESOURCES  := $(patsubst src/resources/%,$(TARGET_DIR)/%,$(RESOURCES))
 TEMPLS     := $(wildcard src/pug/templates/*.pug)
@@ -40,7 +41,7 @@ endif
 all: $(HTML) $(RESOURCES)
 	@for SUB in $(SUBPROJECTS); do $(MAKE) -C src/$$SUB; done
 
-demo: html resources bbemu
+demo: $(HTML) $(RESOURCES) bbemu
 	ln -sf ../../../$(TARGET_DIR) src/py/bbctrl/http
 	./setup.py install
 	cp src/avr/emu/bbemu /usr/local/bin
