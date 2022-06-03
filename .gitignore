@@ -7,6 +7,7 @@
 /mnt
 /demo
 /bbctrl-*
+/src/py/bbctrl/tpl_lib
 node_modules
 *~
 \#*
