@@ -17,7 +17,7 @@ On a Debian Linux (11.3.0 stable) system install the required packages:
 
 ## Getting the Source Code
 
-    git clone https://github.com/buildbotics/bbctrl-firmware
+    git clone https://github.com/haiqu/bbctrl-firmware
 
 ## Build the Firmware
 
@@ -32,8 +32,11 @@ and binfmt to create an emulated ARM build environment.  This is faster and
 more convenient than building on the RPi itself.  All of this is automated.
 
     make camotics
+    
+    Note: This will fail utterly on a Raspberry Pi or within virtual environments
+    under Windows. The reason is a lack of VXD and VXC, a solution is forthcoming.
 
-The first time this is run it will take quite awhile as it setups up the build
+The first time this is run it will take quite a while as it setups up the build
 environment.  You can run the above command again later to build the latest
 version.
 
