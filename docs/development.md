@@ -2,7 +2,7 @@
 
 This document describes how to setup your environment for Buildbotics CNC
 controller development on Debian Linux.  Development on systems other than
-Debian Linux are not supported.
+Debian Linux on 64-bit Intel/AMD are not supported.
 
 ## Installing the Development Prerequisites
 
