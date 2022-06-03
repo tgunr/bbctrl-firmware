@@ -8,7 +8,7 @@ or manual changes.
     sudo apt-get update
     sudo apt-get install binutils debootstrap
 
-# Create chroot environment
+# Create chroot environment on a 64-bit Intel/AMD machine (won't work on others)
 
     mkdir bbdev
     sudo debootstrap --arch amd64 stable bbdev http://deb.debian.org/debian
