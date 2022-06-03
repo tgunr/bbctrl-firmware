@@ -1,4 +1,4 @@
-# Makefile for the project Bulidbotics firmware
+# Makefile for the project Buildbotics firmware
 PROJECT = bbctrl-pwr-firmware
 MCU     = attiny3216
 CLOCK   = 20E6

@@ -57,13 +57,17 @@ The Pwr firmware must be uploaded manually using an ISP programmer.  With the
 programmer attached to the pwr chip ISP port on the Builbotics controller's
 main board run the following:
 
-    make -C src/pwr program
+    make -C src/pwr program (old 1634 PCB version)
+    
+    or
+    
+    make -C src/pwr2 program (current 3216 version)
 
 ## Initializing the main AVR firmware
 
 The main AVR must also be programmed manually the first time.  Later it will be
 automatically programmed by the RPi as part of the firmware install.  To perform
-the initial AVR programming connec the ISP programmer to the main AVR's ISP port
+the initial AVR programming connect the ISP programmer to the main AVR's ISP port
 on the Buildbotics controller's main board and run the following:
 
     make -C src/avr init
@@ -89,7 +93,7 @@ inserting the card look for log messages containing ``/dev/sdx`` where ``x`` is
 a letter.  This should be the device name of the SD card.  Hit ``CTRL-C`` to
 stop following the system log.
 
-    sudo dd bs=4M if=2015-05-05-raspbian-wheezy.img of=/dev/sde
+    sudo dd bs=4M if=2015-05-05-raspbian-wheezy.img of=/dev/sdx
     sudo sync
 
 The first command takes awhile and does not produce any output until it's done.
