@@ -4,8 +4,8 @@ obj-m:=bbserial.o
 ccflags-y:=-std=gnu99 -Wno-declaration-after-statement
 
 KVER=1.20171029-1
-KPKG=raspberrypi-kernel_$(KVER).tar.gz
-KURL=https://github.com/raspberrypi/linux/archive/$(KPKG)
+KPKG=raspberrypi-kernel_$(KVER)
+KURL=https://github.com/raspberrypi/linux/archive/refs/tags/raspberrypi-kernel_$(KVER).tar.gz
 KDIR=linux-raspberrypi-kernel_$(KVER)
 export KERNEL=kernel7
 
@@ -16,12 +16,15 @@ all: $(KDIR)
 
 $(KDIR): $(KPKG)
 	tar xf $(KPKG)
+	ls -l
 	patch -p1 < yylloc.patch
 	$(MAKE) $(KOPTS) bcm2709_defconfig
 	$(MAKE) $(KOPTS) modules_prepare
 
 $(KPKG):
-	wget $(KURL)
+	if [ ! -f $(KPKG) ]; then \
+		wget $(KURL); \
+	fi
 
 clean:
 	$(MAKE) $(KOPTS) M=$(DIR) clean
