@@ -25,3 +25,8 @@ __pycache__
 *.hex
 Makefile.al
 .snapshots/*
+._.*
+.DS_Store
+
+src/bbserial/.bbserial.o.d
+src/bbserial/._Makefile
