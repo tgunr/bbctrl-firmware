@@ -1,0 +1,115 @@
+version: '3.8'
+
+# Define common environment variables
+x-common-env: &common-env
+  CAMOTICS_HOME: ${CAMOTICS_HOME:-/opt/camotics}
+  CBANG_HOME: ${CBANG_HOME:-/opt/cbang}
+  UPDIPROG_HOME: ${UPDIPROG_HOME:-/opt/updiprog}
+  RPIPDI_HOME: ${RPIPDI_HOME:-/opt/rpipdi}
+  BBKBD_HOME: ${BBKBD_HOME:-/opt/bbkbd}
+  PYTHONUNBUFFERED: 1
+  PYTHONDONTWRITEBYTECODE: 1
+
+# Define common volumes
+x-common-volumes: &common-volumes
+  - .:/build
+  - build-cache:/build/build
+  - node-modules:/build/node_modules
+  - dist-output:/build/dist
+
+services:
+  # Production build service
+  bbctrl-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    volumes: *common-volumes
+    environment: *common-env
+    # Run as non-root user (defined in Dockerfile)
+    user: "builder"
+    # Set resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "make pkg"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    # Restart policy
+    restart: unless-stopped
+
+  # Development environment
+  bbctrl-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - NODE_ENV=development
+    volumes:
+      - *common-volumes
+      - venv:/venv
+    # Run as current user to avoid permission issues
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      <<: *common-env
+      NODE_ENV: development
+      PYTHONPATH: /build/src/py
+      # Development-specific environment variables
+      DEBUG: "true"
+      WATCH: "true"
+    ports:
+      - "8080:8080"  # Web interface
+      - "5678:5678"  # Python debugger
+      - "9229:9229"  # Node.js debugger
+    # Development command with live reload
+    command: make watch
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "make watch"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Restart policy
+    restart: unless-stopped
+    # Development-specific settings
+    working_dir: /build
+    stdin_open: true
+    tty: true
+    # Development resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+# Define named volumes for better persistence
+volumes:
+  build-cache:
+    name: bbctrl-build-cache
+    driver: local
+  node-modules:
+    name: bbctrl-node-modules
+    driver: local
+  dist-output:
+    name: bbctrl-dist-output
+    driver: local
+  venv:
+    name: bbctrl-venv
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    driver: bridge
+    name: bbctrl-network

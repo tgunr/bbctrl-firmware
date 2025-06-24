@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+# Function to run a command in the Docker container
+function docker_run() {
+    docker-compose run --rm bbctrl-build "$@"
+}
+
+# Default to building the package if no arguments provided
+if [ $# -eq 0 ]; then
+    docker_run make pkg
+else
+    docker_run "$@"
+fi
