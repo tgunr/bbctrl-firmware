@@ -33,3 +33,6 @@ CAMotics/
 cbang/
 
 
+
+# Ignore image directory with build artifacts
+image/
