@@ -1,0 +1,4 @@
+; Goto Z Home
+G21 G90                        ; Metric, absolute mode
+G53 G1 Z0 F500
+G1 X0 Y0

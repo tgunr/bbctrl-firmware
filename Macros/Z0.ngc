@@ -1,0 +1,3 @@
+; Goto Z origin
+G21 G90                        ; Metric, absolute mode
+G1 Z0 F500

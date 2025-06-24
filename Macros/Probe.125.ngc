@@ -1,0 +1,14 @@
+o1 (Adjust probed position 1/8 inch)
+
+; preserve modal state
+M70
+
+; new state uses inches
+G17 G20 G40 G49 G54 G80 G90 G94
+
+#<newX> = [#<_x> - 0.0.0625]
+#<newY> = [#<_y> - 0.0.0625]
+G92 X#<newX> Y#<newY>
+
+; restore modal state
+M72

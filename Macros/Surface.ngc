@@ -1,0 +1,277 @@
+% R40
+o1 (SURFACE RECTANGE - ORIGIN IS CENTER OR BOTTOM LEFT)
+; CONFIG SECTION
+; USE CENTER ORIGIN? 1=YES 0=NO
+#<_center> = 0
+; UNITS? 1=mm 0=inches
+#<_units> = 0
+; DRY RUN? 1=YES 0=NO
+#<_dry_run> = 0
+; ASK BEFORE EACH PASS? 1=YES 0=NO
+#<_ask> = 0
+; WIDTH ON X
+#<_x_width> = 48.0    (9.25 INCHES = ~235MM)
+; LENGTH ON Y
+#<_y_length> = 32.0   (7.75 INCHES = ~197MM)
+; TOOL DIAMETER
+#<_tool_diameter> = 1  (1.375 INCHES = ~35MM)
+; DEPTH TO GO DOWN IN ONE PASS USE NEGATIVE
+#<_pass_depth> = -0.005
+#<_final_depth> = -0.005
+; STEPOVER PERCENTAGE 75-80% RECOMMENDED
+#<_stepover_percent> = 70
+; CALCULATE STEPOVER FROM TOOL DIAMETER AND PERCENTAGE
+#<_stepover> = [#<_tool_diameter> * #<_stepover_percent> / 100]
+; FEEDRATE
+#<_feedrate> = 500 (INCHES PER MINUTE)
+
+; CALCULATE SAFE Z HEIGHT BASED ON UNITS
+o20 IF [#<_units> EQ 1]
+    #<_safe_z> = 6.25  (MM)
+o20 ELSE
+    #<_safe_z> = 0.125 (INCHES)
+o20 ENDIF
+
+M0 (DEBUG, _units=#<_units> _center=#<_center> dry_run=#<_dry_run> ask=#<_ask> x_width=#<_x_width> y_length=#<_y_length> tool_diameter=#<_tool_diameter> pass_depth=#<_pass_depth> final_depth=#<_final_depth> stepover_percent=#<_stepover_percent> stepover=#<_stepover> feedrate=#<_feedrate>)
+; END OF CONFIG SECTION
+
+; SAFETY CHECKS
+; 400-499
+o400 IF [#<_final_depth> GT #<_pass_depth>]
+    M0 (MSG, FINAL DEPTH MUST NOT BE HIGHER THAN PASS DEPTH - ABORTING)
+    M2
+o400 ENDIF
+
+; CHECK STEPOVER AGAINST TOOL DIAMETER
+o401 IF [#<_stepover> GT [#<_tool_diameter> * 0.8]]
+    M0 (MSG, STEPOVER EXCEEDS 80% OF TOOL DIAMETER - ABORTING)
+    M2
+o401 ENDIF
+
+; POSITION AND MOVEMENT CONTROL
+; 200-299
+o200 IF [#<_center> GT 0]
+    #<_xstart> = [0 - #<_x_width> / 2]   (ORIGIN IS CENTER SO START X AT NEGATIVE HALF WIDTH)
+    #<_ystart> = [0 - #<_y_length> / 2]  (ORIGIN IS CENTER SO START Y AT NEGATIVE HALF LENGTH)
+    #<_xend> = [#<_x_width> / 2]         (END X AT POSITIVE HALF WIDTH)
+    #<_yend> = [#<_y_length> / 2]        (END Y AT POSITIVE HALF LENGTH)
+o200 ELSE
+    #<_xstart> = 0                       (START FROM BOTTOM LEFT)
+    #<_ystart> = 0
+    #<_xend> = #<_x_width>               (END AT X WIDTH)
+    #<_yend> = #<_y_length>              (END AT Y LENGTH)
+o200 ENDIF
+
+; FOR DRY RUN, USE SAFE Z HEIGHT
+o210 IF [#<_dry_run> GT 0]
+    #<_curr_depth> = #<_safe_z>          (STAY AT SAFE Z FOR DRY RUN)
+    #<_depth> = #<_safe_z>               (STAY AT SAFE Z FOR DRY RUN)
+    M0 (MSG, DRY RUN MODE ENABLED - WILL STAY AT SAFE Z HEIGHT)
+o210 ELSE
+    #<_curr_depth> = 0                   (START AT Z0)
+    #<_depth> = #<_pass_depth>           (START AT FIRST PASS DEPTH)
+o210 ENDIF
+
+#<_ramp_feed> = [#<_feedrate> / 2]       (REDUCE FEEDRATE BY 50% FOR RAMP)
+
+; CALCULATE NUMBER OF PASSES NEEDED
+o211 IF [#<_dry_run> EQ 0]
+    #<_total_passes> = [FIX[ABS[#<_final_depth>] / ABS[#<_pass_depth>]]]
+    o212 IF [#<_total_passes> EQ 0]
+        #<_total_passes> = 1
+    o212 ENDIF
+    M0 (DEBUG, TOTAL PASSES REQUIRED=#<_total_passes>)
+o211 ELSE
+    #<_total_passes> = 1 (ONLY ONE PASS NEEDED FOR DRY RUN)
+o211 ENDIF
+
+; SET ABSOLUTE POSITIONING AND XY PLANE
+G0 G90 G17
+o303 IF [#<_units> EQ 1]
+    G21          (SET UNITS TO MILLIMETERS)
+o303 ELSE
+    G20          (SET UNITS TO INCHES)
+o303 ENDIF
+
+; SAFETY HEIGHT BEFORE STARTING
+G0 Z#<_safe_z>
+
+; MAIN PROGRAM FLOW CONTROL
+; 100-199
+o100 SUB
+    ; SAFETY HEIGHT
+    G0 Z#<_safe_z>
+
+    ; MOVE TO START POSITION
+    G0 X#<_xstart> Y#<_ystart>
+
+    o102 IF [#<_dry_run> GT 0]
+        ; FOR DRY RUN, JUST GO TO SAFE Z
+        G1 Z#<_safe_z> F#<_feedrate>
+    o102 ELSE
+        ; NORMAL CUTTING OPERATIONS
+        ; RAMP STARTING HEIGHT
+        G1 Z#<_curr_depth> F#<_ramp_feed>
+
+        ; DISTANCE DOWN WE NEED TO GO
+        #<_dist> = [#<_depth> - #<_curr_depth>]
+
+        M0 (DEBUG, DIST=#<_dist> _curr_depth=#<_curr_depth> DEPTH=#<_depth>)
+        o103 IF [#<_units> EQ 1]
+            #<_ramp_depth> = -2.2  (5 DEGREE RAMP OVER 25MM - NEGATIVE FOR DOWNWARD)
+        o103 ELSE
+            #<_ramp_depth> = -.087 (5 DEGREE RAMP OVER 1 INCH - NEGATIVE FOR DOWNWARD)
+        o103 ENDIF
+
+        ; ENSURE RAMP DEPTH IS NOT ZERO TO AVOID DIVISION BY ZERO
+        o104 IF [#<_ramp_depth> EQ 0]
+            M0 (DEBUG, RAMP DEPTH IS ZERO)
+            #<_ramp_depth> = -0.001 (SET TO A SMALL NEGATIVE VALUE)
+        o104 ENDIF
+
+        #<_ramps> = [FIX[ABS[#<_dist>] / ABS[#<_ramp_depth>]]]
+
+        o105 IF [#<_ramps> EQ 0]
+            M0 (DEBUG, RAMPS IS ZERO)
+            #<_ramps> = 1 (ENSURE AT LEAST ONE RAMP)
+        o105 ENDIF
+
+        ; IF RAMP DEPTH IS LARGER THAN OUR TARGET DISTANCE, USE THE TARGET DISTANCE
+        o106 IF [ABS[#<_ramp_depth>] GT ABS[#<_dist>]]
+            M0 (DEBUG, RAMP DEPTH IS LARGER THAN TARGET DISTANCE)
+            #<_ramp_depth> = #<_dist>
+        o106 ENDIF
+
+        M0 (DEBUG, RAMPING DIST=#<_dist> RAMP_DEPTH=#<_ramp_depth> RAMPS=#<_ramps>)
+
+        ; RAMP DOWN TO DEPTH
+        #<_xpos> = #<_xstart>
+        #<_ypos> = #<_ystart>
+
+        o107 REPEAT [#<_ramps>]
+            #<_curr_depth> = [#<_curr_depth> + #<_ramp_depth>]  (MOVE DOWN BY RAMP DEPTH)
+
+            ; ENSURE WE DON'T GO PAST TARGET DEPTH
+            o108 IF [#<_curr_depth> LT #<_depth>]
+                #<_curr_depth> = #<_depth>
+            o108 ENDIF
+
+            ; PERFORM RAMP MOVE - MOVE X FORWARD WHILE RAMPING DOWN
+            G1 X[#<_xstart> + 1] Z#<_curr_depth> F#<_ramp_feed>
+
+            ; MOVE BACK TO START FOR NEXT RAMP IF NEEDED
+            G1 X#<_xstart> F#<_feedrate>
+        o107 ENDREPEAT
+
+        ; ENSURE WE'RE AT EXACT TARGET DEPTH
+        G1 Z#<_depth> F#<_feedrate>
+    o102 ENDIF
+
+    ; RETURN TO FULL FEEDRATE
+    F#<_feedrate>
+o100 endsub
+
+; MAIN MULTI-PASS LOOP
+#<_current_pass> = 1
+#<_current_total_depth> = 0
+
+o600 WHILE [#<_current_pass> LE #<_total_passes>]
+    ; CALCULATE DEPTH FOR THIS PASS
+    o601 IF [#<_dry_run> GT 0]
+        #<_depth> = #<_safe_z>
+    o601 ELSE
+        #<_target_depth> = [#<_current_pass> * #<_pass_depth>]
+        ; ENSURE WE DON'T GO DEEPER THAN FINAL DEPTH
+        o602 IF [#<_target_depth> LT #<_final_depth>]
+            #<_target_depth> = #<_final_depth>
+        o602 ENDIF
+        #<_depth> = #<_target_depth>
+    o601 ENDIF
+
+    ; ASK USER BEFORE EACH PASS IF ENABLED
+    o603 IF [#<_ask> GT 0]
+        M0 (MSG, STARTING PASS #<_current_pass> OF #<_total_passes> TO DEPTH #<_depth> - PRESS CYCLE START TO CONTINUE)
+    o603 ELSE
+        M0 (DEBUG, STARTING PASS #<_current_pass> OF #<_total_passes> TO DEPTH #<_depth>)
+    o603 ENDIF
+
+    ; CALL SUB TO DO RAMPS
+    o100 call
+
+    ; SURFACING LOGIC - FIXED FOR PROPER X AND Y TRAVEL
+    M0 (DEBUG, STARTING SURFACING PATTERN AT DEPTH=#<_depth>)
+
+    ; INITIALIZE CURRENT POSITION
+    #<_xpos> = #<_xstart>
+    #<_ypos> = #<_ystart>
+    #<_direction> = 1  (1=POSITIVE X DIRECTION, -1=NEGATIVE X DIRECTION)
+
+    ; MOVE TO START POSITION
+    G1 X#<_xpos> Y#<_ypos> F#<_feedrate>
+
+    ; MAIN SURFACING LOOP
+    o500 WHILE [#<_ypos> LE #<_yend>]
+        ; DETERMINE DIRECTION OF X TRAVEL
+        o501 IF [#<_direction> GT 0]
+            ; MOVE IN POSITIVE X DIRECTION
+            G1 X#<_xend> Y#<_ypos> F#<_feedrate>
+            #<_xpos> = #<_xend>
+        o501 ELSE
+            ; MOVE IN NEGATIVE X DIRECTION
+            G1 X#<_xstart> Y#<_ypos> F#<_feedrate>
+            #<_xpos> = #<_xstart>
+        o501 ENDIF
+
+        ; TOGGLE DIRECTION FOR NEXT PASS
+        #<_direction> = [0 - #<_direction>]
+
+        ; INCREMENT Y POSITION BY STEPOVER
+        #<_ypos> = [#<_ypos> + #<_stepover>]
+
+        ; CHECK IF WE'RE PAST THE END OF Y
+        o502 IF [#<_ypos> GT #<_yend>]
+            ; IF WE'RE PAST THE END, BREAK THE LOOP
+            o500 BREAK
+        o502 ELSE
+            ; MOVE TO NEXT Y POSITION
+            G1 X#<_xpos> Y#<_ypos> F#<_feedrate>
+        o502 ENDIF
+    o500 ENDWHILE
+
+    ; CLEAN UP LAST ROW IF NEEDED (IN CASE WE DIDN'T END EXACTLY AT Y END)
+    o503 IF [#<_ypos> GT #<_yend> AND [#<_ypos> - #<_stepover>] LT #<_yend>]
+        ; MAKE A FINAL PASS AT EXACT Y END POSITION
+        #<_ypos> = #<_yend>
+
+        o504 IF [#<_direction> GT 0]
+            G1 X#<_xend> Y#<_ypos> F#<_feedrate>
+        o504 ELSE
+            G1 X#<_xstart> Y#<_ypos> F#<_feedrate>
+        o504 ENDIF
+    o503 ENDIF
+
+    ; UPDATE CURRENT DEPTH FOR NEXT PASS
+    #<_curr_depth> = #<_depth>
+
+    ; INCREMENT PASS COUNTER
+    #<_current_pass> = [#<_current_pass> + 1]
+
+    ; MOVE TO SAFE HEIGHT BETWEEN PASSES (EXCEPT FOR LAST PASS)
+    o605 IF [#<_current_pass> LE #<_total_passes>]
+        G0 Z#<_safe_z>
+        M0 (DEBUG, COMPLETED PASS #<_current_pass - 1> - MOVING TO SAFE HEIGHT)
+    o605 ENDIF
+
+o600 ENDWHILE
+
+; MOVE TO SAFE Z HEIGHT WHEN COMPLETE
+G0 Z#<_safe_z>
+
+; RETURN TO HOME POSITION
+G0 X0 Y0
+
+; USE COORDINATE SYSTEM 1
+G54
+
+M30
+%

@@ -1,0 +1,99 @@
+; Minimal XY-Probe - Forum Style with Deep Contact Safety
+(LOGOPEN,log.txt)
+o<globals> call
+
+#<fast_probe> = 100
+#<slow_probe> = 25
+
+; Preamble
+G17 G21 G40 G49 G54 G80 G90 G94
+; G17 use XY plane, G21 inch mode, G40 cancel diameter compensation,
+; G49 cancel length offset, G54 use coordinate system 1,
+; G80 cancel canned cycles, G90 absolute distance mode, G94 feed/minute mode.
+
+
+(MSG, you did check I/O pin shows when contacted?)
+;
+(MSG, YOU HAVE BEEN WARNED!)
+;
+(MSG, Position tool above probe block)
+;
+(MSG, Press Cycle Start to probe)
+M0
+
+(LOG, Fast Probing...)
+
+; set feed rate
+F#<fast_probe>
+
+; record start position
+#<probe_startX> = #<_x>
+#<probe_startY> = #<_y>
+
+; move to right past block
+G0 X[#<probe_startX> + #<_probe_block_b> - 1]
+
+; move down halfway
+G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
+
+; probe left back to block
+G38.2 X[#<probe_startX>]
+
+; set x position
+(LOG, Probe fast contact at: #<_x>)
+
+(LOG, Slow Probing)
+
+; back off a bit to right
+G1 X[#<_x> + 3]
+
+; slow down
+F#<slow_probe>
+
+; probe left back to block
+G38.2 X[#<probe_startX>]
+(LOG, Probe slow contact at #<_x>)
+#<newX> = #<_x>
+
+; X set, now do Y
+
+G#<fast_probe>
+
+; Retract
+G0 X[#<_x> + 3]
+G0 Z[#<_probe_block_z> + 10]
+
+; move to Y start
+G0 X#<probe_startX> Y[#<probe_startY> + #<_probe_block_b> - 1]
+
+; move down halfway
+G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
+
+; probe down to block
+G38.2 Y[#<probe_startY>]
+
+; set Y position
+(LOG, Probe fast contact at: #<_y>)
+
+(LOG, Slow Probing)
+
+; back off a bit to right
+G0 Y[#<_y> + 3]
+
+; slow down
+F#<slow_probe>
+
+; probe left back to block
+G38.2 Y[#<probe_startY>]
+(LOG, Probe slow contact at #<_y>)
+G92 X[#<newX> - #<_probe_block_x>]
+G92 Y[#<_y> - #<_probe_block_y>]
+
+; retract
+G1 Y[#<_y> + 3]
+G0 Z[#<_probe_block_z> + 10]
+
+(MSG, Probe complete - coordinates set correctly)
+(MSG, Remove probe block when ready)
+
+M30
