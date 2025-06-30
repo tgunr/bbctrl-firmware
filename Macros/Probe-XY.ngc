@@ -12,13 +12,7 @@ G17 G21 G40 G49 G54 G80 G90 G94
 ; G80 cancel canned cycles, G90 absolute distance mode, G94 feed/minute mode.
 
 
-(MSG, you did check I/O pin shows when contacted?)
-;
-(MSG, YOU HAVE BEEN WARNED!)
-;
-(MSG, Position tool above probe block)
-;
-(MSG, Press Cycle Start to probe)
+(MSG, WARNING: You did check I/O pin shows when contacted, right?  Position tool above probe block.  Press Cycle Start to probe)
 M0
 
 (LOG, Fast Probing...)
@@ -29,23 +23,29 @@ F#<fast_probe>
 ; record start position
 #<probe_startX> = #<_x>
 #<probe_startY> = #<_y>
+#<probe_startZ> = #<_z>
+(LOG, startX: #<probe_startX> startY: #<probe_startY> block: #<_probe_block_b>)
 
 ; move to right past block
-G0 X[#<probe_startX> + #<_probe_block_b> - 1]
+#<probe_right> = [#<probe_startX> + #<_probe_block_b>]
+(LOG, Moving right to X: #<probe_right>)
+G0 X#<probe_right>
 
-; move down halfway
-G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
+; move down to half of probe block height
+#<probe_z> = [#<_probe_block_z> / 2]
+(LOG, Moving down to Z: #<probe_z>)
+G0 Z#<probe_z>
 
-; probe left back to block
-G38.2 X[#<probe_startX>]
+; probe left to find block edge
+(LOG, Probing left to find block edge)
+G38.2 X[#<probe_startX> - 10] F20
 
 ; set x position
-(LOG, Probe fast contact at: #<_x>)
-
+(LOG, Probe fast contact X at: #<_x>)
 (LOG, Slow Probing)
 
 ; back off a bit to right
-G1 X[#<_x> + 3]
+G0 X[#<_x> + 3]
 
 ; slow down
 F#<slow_probe>
@@ -57,7 +57,7 @@ G38.2 X[#<probe_startX>]
 
 ; X set, now do Y
 
-G#<fast_probe>
+F#<fast_probe>
 
 ; Retract
 G0 X[#<_x> + 3]
@@ -72,10 +72,8 @@ G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
 ; probe down to block
 G38.2 Y[#<probe_startY>]
 
-; set Y position
-(LOG, Probe fast contact at: #<_y>)
-
-(LOG, Slow Probing)
+; log Y position
+(LOG, Probe fast contact Y at: #<_y>)
 
 ; back off a bit to right
 G0 Y[#<_y> + 3]
@@ -83,17 +81,38 @@ G0 Y[#<_y> + 3]
 ; slow down
 F#<slow_probe>
 
-; probe left back to block
+; probe back to block
 G38.2 Y[#<probe_startY>]
-(LOG, Probe slow contact at #<_y>)
-G92 X[#<newX> - #<_probe_block_x>]
-G92 Y[#<_y> - #<_probe_block_y>]
+#<newY> = #<_y>
+(LOG, Probe slow contact Y at #<_y>)
+
+; Calculate the work offset to position the bit's edge at the stock corner
+; Current position is at the probe block's edges (right and front)
+; Need to move left by probe block X and down by probe block Y
+#<stock_edge_x> = #<newX> - #<_probe_block_x>  ; Move left by probe block width
+#<stock_edge_y> = #<newY> - #<_probe_block_y>  ; Move down by probe block depth
+
+; Log all relevant values for verification
+(LOG, --- Probe Results ---)
+(LOG, Probed X position - right edge: #<newX>)
+(LOG, Probed Y position - front edge: #<newY>)
+(LOG, Probe block X dimension: #<_probe_block_x>)
+(LOG, Probe block Y dimension: #<_probe_block_y>)
+(LOG, Calculated stock edge X - left: #<stock_edge_x>)
+(LOG, Calculated stock edge Y - bottom: #<stock_edge_y>)
+
+; Set work offset to position the bit's edge at the stock edge
+G10 L20 P1 X#<stock_edge_x> Y#<stock_edge_y>
+
+; Log the final position and retract Z
+(LOG, Work offset set - X: #<stock_edge_x> Y: #<stock_edge_y>)
+(LOG, Retracting Z to starting position)
+
+;G92 X[#<newX> - #<_probe_block_x>]
+;G92 Y[#<_y> - #<_probe_block_y>]
 
 ; retract
-G1 Y[#<_y> + 3]
-G0 Z[#<_probe_block_z> + 10]
-
-(MSG, Probe complete - coordinates set correctly)
-(MSG, Remove probe block when ready)
+G0 Y[#<_y> + 3]
+G0 Z[#<_probe_block_z> * 2]
 
 M30
