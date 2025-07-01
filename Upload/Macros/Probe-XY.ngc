@@ -2,29 +2,41 @@
 (LOGOPEN,log.txt)
 o<globals> call
 
-#<fast_probe> = 100
-#<slow_probe> = 25
-
 ; Preamble
 G17 G21 G40 G49 G54 G80 G90 G94
 ; G17 use XY plane, G21 inch mode, G40 cancel diameter compensation,
 ; G49 cancel length offset, G54 use coordinate system 1,
 ; G80 cancel canned cycles, G90 absolute distance mode, G94 feed/minute mode.
 
+M70                           ; Save machine state
+G21                           ; Metric units
+M5                            ; Stop spindle
 
 (MSG, WARNING: You did check I/O pin shows when contacted, right?  Position tool above probe block.  Press Cycle Start to probe)
 M0
-
-(LOG, Fast Probing...)
-
-; set feed rate
-F#<fast_probe>
-
 ; record start position
 #<probe_startX> = #<_x>
 #<probe_startY> = #<_y>
 #<probe_startZ> = #<_z>
 (LOG, startX: #<probe_startX> startY: #<probe_startY> block: #<_probe_block_b>)
+
+G92 X0Y0Z0                    ; Set all positions to 0
+
+; Probe Z down up to 100mm
+G38.2 G91 Z-100 F#<fast_probe>              
+; Back off 
+G0 Z[#<_z> + 3>]
+; Probe slow
+G38.2 G91 Z-4 F#<slow_probe>              
+#<newZ> = #<_z>
+
+; Set Z to probe inset height
+G92 Z[#<_inset_height>]       
+; Determine bit radius by probing X edges
+G0 G90 Z[#<_inset_height> + 10]    ; Raise to safe height
+G0 G91 X[#<_x_outer_dim> - #<_circle_x> + 20]  ; Move past right edge
+G1 G90 Z[#<_inset_height> - 5]     ; Move to probing height
+M0 (MSG, align flute for x probe)
 
 ; move to right past block
 #<probe_right> = [#<probe_startX> + #<_probe_block_b>]
@@ -37,27 +49,20 @@ G0 X#<probe_right>
 G0 Z#<probe_z>
 
 ; probe left to find block edge
-(LOG, Probing left to find block edge)
-G38.2 X[#<probe_startX> - 10] F20
+(LOG, Probing left to find block edge F: #<fast_probe>)
+G38.2 X[#<probe_startX> - 10] F#<fast_probe>
 
-; set x position
 (LOG, Probe fast contact X at: #<_x>)
-(LOG, Slow Probing)
-
 ; back off a bit to right
 G0 X[#<_x> + 3]
 
-; slow down
-F#<slow_probe>
-
+(LOG, Slow Probing F: #<slow_probe>)
 ; probe left back to block
-G38.2 X[#<probe_startX>]
+G38.2 X[#<probe_startX>] F#<slow_probe>
 (LOG, Probe slow contact at #<_x>)
 #<newX> = #<_x>
 
 ; X set, now do Y
-
-F#<fast_probe>
 
 ; Retract
 G0 X[#<_x> + 3]
@@ -70,27 +75,16 @@ G0 X#<probe_startX> Y[#<probe_startY> + #<_probe_block_b> - 1]
 G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
 
 ; probe down to block
-G38.2 Y[#<probe_startY>]
-
-; log Y position
+G38.2 Y[#<probe_startY>] F#<fast_probe>
 (LOG, Probe fast contact Y at: #<_y>)
 
 ; back off a bit to right
 G0 Y[#<_y> + 3]
 
-; slow down
-F#<slow_probe>
-
 ; probe back to block
-G38.2 Y[#<probe_startY>]
+G38.2 Y[#<probe_startY>] F#<slow_probe>
 #<newY> = #<_y>
 (LOG, Probe slow contact Y at #<_y>)
-
-; Calculate the work offset to position the bit's edge at the stock corner
-; Current position is at the probe block's edges (right and front)
-; Need to move left by probe block X and down by probe block Y
-#<stock_edge_x> = #<newX> - #<_probe_block_x>  ; Move left by probe block width
-#<stock_edge_y> = #<newY> - #<_probe_block_y>  ; Move down by probe block depth
 
 ; Log all relevant values for verification
 (LOG, --- Probe Results ---)
@@ -98,6 +92,12 @@ G38.2 Y[#<probe_startY>]
 (LOG, Probed Y position - front edge: #<newY>)
 (LOG, Probe block X dimension: #<_probe_block_x>)
 (LOG, Probe block Y dimension: #<_probe_block_y>)
+
+; Calculate the work offset to position the bit's edge at the stock corner
+; Current position is at the probe block's edges (right and back)
+; Need to move left by probe block X and down by probe block Y
+#<stock_edge_x> = #<newX> - #<_probe_block_x>  ; Move left by probe block width
+#<stock_edge_y> = #<newY> - #<_probe_block_y>  ; Move down by probe block depth
 (LOG, Calculated stock edge X - left: #<stock_edge_x>)
 (LOG, Calculated stock edge Y - bottom: #<stock_edge_y>)
 
@@ -111,8 +111,11 @@ G10 L20 P1 X#<stock_edge_x> Y#<stock_edge_y>
 ;G92 X[#<newX> - #<_probe_block_x>]
 ;G92 Y[#<_y> - #<_probe_block_y>]
 
+(PROBEOPEN probe_xy.txt) 
 ; retract
 G0 Y[#<_y> + 3]
 G0 Z[#<_probe_block_z> * 2]
+
+(PROBECLOSE)
 
 M30

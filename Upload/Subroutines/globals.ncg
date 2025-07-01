@@ -4,5 +4,9 @@ o<globals> sub
 #<_probe_block_x> = 54.01 ; actual measured X dimension of probe block
 #<_probe_block_y> = 54.20 ; actual measured Y dimension of probe block (mm)
 #<_probe_block_b> = 20    ; distance to move past block for probing (mm)
+#<fast_probe> = 100
+#<slow_probe> = 25
 (LOG, GLOBALS X:#<_probe_block_x> Y:#<_probe_block_y> Z:#<_probe_block_z> B: #<_probe_block_b>)
+(LOG, COORD: #<_coord_system>)
+(LOG, TOOL: #<_tool_number>)
 o<globals> endsub
