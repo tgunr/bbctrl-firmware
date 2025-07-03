@@ -34,3 +34,7 @@ cbang/
 image/
 Upload/Projects
 log.txt
+Upload/Macros/Test1.ngc
+src/before_mdi_click.png
+Tools/*.png
+Tools/endpoint_scan_results.txt
