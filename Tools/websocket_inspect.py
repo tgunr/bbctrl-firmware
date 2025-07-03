@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-WebSocket Inspector for OneFinity Controller
+WebSocket Inspector for bbctrl Controller
 
-This script connects to the OneFinity controller's WebSocket interface
+This script connects to the bbctrl controller's WebSocket interface
 and logs all incoming messages. It can also be used to send commands
 to the controller for testing purposes.
 """
@@ -13,7 +13,7 @@ import ssl
 import argparse
 from datetime import datetime
 
-class OneFinityWebSocket:
+class BbctrlWebSocket:
     def __init__(self, host='bbctrl.local', port=80, ssl_port=443, use_ssl=False):
         self.host = host
         self.port = ssl_port if use_ssl else port
@@ -140,7 +140,7 @@ class OneFinityWebSocket:
             print("Disconnected")
 
 async def main():
-    parser = argparse.ArgumentParser(description='OneFinity Controller WebSocket Inspector')
+    parser = argparse.ArgumentParser(description='bbctrl Controller WebSocket Inspector')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='WebSocket port (default: 80)')
     parser.add_argument('--ssl', action='store_true', help='Use secure WebSocket (wss)')
@@ -148,7 +148,7 @@ async def main():
     
     args = parser.parse_args()
     
-    inspector = OneFinityWebSocket(
+    inspector = BbctrlWebSocket(
         host=args.host,
         port=args.port,
         ssl_port=args.ssl_port,

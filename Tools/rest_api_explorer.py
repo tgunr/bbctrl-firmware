@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-OneFinity Controller REST API Explorer
+bbctrl Controller REST API Explorer
 
-This script helps explore the available REST API endpoints on the OneFinity controller.
+This script helps explore the available REST API endpoints on the bbctrl controller.
 """
 import requests
 import json
@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 import sys
 
-class OneFinityAPI:
+class BbctrlAPI:
     def __init__(self, base_url='http://bbctrl.local'):
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
@@ -141,7 +141,7 @@ class OneFinityAPI:
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='OneFinity Controller REST API Explorer')
+    parser = argparse.ArgumentParser(description='bbctrl Controller REST API Explorer')
     parser.add_argument('--host', default='http://bbctrl.local', help='Controller base URL')
     parser.add_argument('--explore', action='store_true', help='Explore all API endpoints')
     parser.add_argument('--gcode', help='Send a G-code command')
@@ -152,7 +152,7 @@ def main():
     
     args = parser.parse_args()
     
-    api = OneFinityAPI(args.host)
+    api = BbctrlAPI(args.host)
     
     if args.explore:
         api.explore_endpoints()

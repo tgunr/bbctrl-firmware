@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Simple G-code Sender for OneFinity Controller
+Simple G-code Sender for bbctrl Controller
 
-This script sends G-code commands directly to the OneFinity controller
+This script sends G-code commands directly to the bbctrl controller
 using the most common API endpoint.
 """
 
@@ -12,7 +12,7 @@ import time
 import sys
 
 def send_gcode(host='bbctrl.local', port=80, gcode=None, username=None, password=None):
-    """Send a G-code command to the OneFinity controller"""
+    """Send a G-code command to the bbctrl controller"""
     url = f"http://{host}:{port}/api/gcode"
     
     headers = {
@@ -82,7 +82,7 @@ def get_status(host='bbctrl.local', port=80, username=None, password=None):
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Send G-code to OneFinity Controller')
+    parser = argparse.ArgumentParser(description='Send G-code to bbctrl Controller')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--username', help='Login username')

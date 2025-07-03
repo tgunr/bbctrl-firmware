@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Buildbotics/OneFinity Controller API Client
+Buildbotics/bbctrl Controller API Client
 
-This script provides a Python client for interacting with the Buildbotics/OneFinity controller's web interface.
+This script provides a Python client for interacting with the Buildbotics/bbctrl controller's web interface.
 It supports both REST API calls and WebSocket communication, with state change tracking.
 """
 
@@ -26,10 +26,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('onefinity_api.log')
+        logging.FileHandler('bbctrl_api.log')
     ]
 )
-logger = logging.getLogger('OneFinityAPI')
+logger = logging.getLogger('BbctrlAPI')
 
 def dict_diff(old: Dict, new: Dict, path: str = '') -> Dict:
     """Recursively find differences between two dictionaries."""
@@ -55,21 +55,21 @@ def dict_diff(old: Dict, new: Dict, path: str = '') -> Dict:
     return diff
 
 class BbctrlAPI:
-    """Client for interacting with the Buildbotics/OneFinity controller's web interface."""
+    """Client for interacting with the Buildbotics/bbctrl controller's web interface."""
     
     def __init__(self, base_url: str = 'http://bbctrl.local', username: str = None, password: str = None, 
                  track_changes: bool = False, reset_state: bool = False):
         """Initialize the API client.
         
         Args:
-            base_url: Base URL of the OneFinity controller (e.g., http://bbctrl.local)
+            base_url: Base URL of the bbctrl controller (e.g., http://bbctrl.local)
             username: Username for authentication (if required)
             password: Password for authentication (if required)
         """
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'OneFinityAPIClient/1.0',
+            'User-Agent': 'BbctrlAPIClient/1.0',
             'Accept': 'application/json, text/plain, */*',
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
@@ -176,7 +176,7 @@ class BbctrlAPI:
             return {'status': 'error', 'message': str(e)}
     
     def login(self) -> bool:
-        """Authenticate with the OneFinity controller.
+        """Authenticate with the bbctrl controller.
         
         Returns:
             bool: True if authentication was successful, False otherwise
@@ -196,7 +196,7 @@ class BbctrlAPI:
             
             if response.status_code == 200:
                 self.authenticated = True
-                logger.info("Successfully authenticated with the OneFinity controller")
+                logger.info("Successfully authenticated with the bbctrl controller")
                 return True
             elif response.status_code == 404:
                 # If the auth endpoint doesn't exist, the controller might not require authentication
@@ -290,7 +290,7 @@ class BbctrlAPI:
         return current_state, changes
     
     def get_config(self) -> Dict:
-        """Get the current configuration of the OneFinity controller.
+        """Get the current configuration of the bbctrl controller.
         
         Returns:
             dict: Controller configuration
@@ -298,7 +298,7 @@ class BbctrlAPI:
         return self._make_request('GET', self.endpoints['config'])
         
     def update_config(self, config_data: Dict) -> Dict:
-        """Update the configuration of the OneFinity controller.
+        """Update the configuration of the bbctrl controller.
         
         Args:
             config_data: Configuration data to update
@@ -309,7 +309,7 @@ class BbctrlAPI:
         return self._make_request('POST', self.endpoints['config'], data=config_data)
     
     def get_logs(self, limit: int = 100) -> List[Dict]:
-        """Get logs from the OneFinity controller.
+        """Get logs from the bbctrl controller.
         
         Args:
             limit: Maximum number of log entries to retrieve
@@ -320,7 +320,7 @@ class BbctrlAPI:
         return self._make_request('GET', self.endpoints['log'], params={'limit': limit})
     
     def download_bugreport(self, output_file: str = 'bugreport.zip') -> bool:
-        """Download a bug report from the OneFinity controller.
+        """Download a bug report from the bbctrl controller.
         
         Args:
             output_file: Path to save the bug report
@@ -349,7 +349,7 @@ class BbctrlAPI:
             return False
     
     def download_config(self, output_file: str = 'config.json') -> bool:
-        """Download the current configuration from the OneFinity controller.
+        """Download the current configuration from the bbctrl controller.
         
         Args:
             output_file: Path to save the configuration
@@ -378,7 +378,7 @@ class BbctrlAPI:
             return False
     
     def list_files(self, path: str = '') -> List[Dict]:
-        """List files in a directory on the OneFinity controller.
+        """List files in a directory on the bbctrl controller.
         
         Args:
             path: Directory path (relative to root)
@@ -390,7 +390,7 @@ class BbctrlAPI:
         return self._make_request('GET', endpoint)
     
     def upload_file(self, local_path: str, remote_path: str) -> bool:
-        """Upload a file to the OneFinity controller.
+        """Upload a file to the bbctrl controller.
         
         Args:
             local_path: Path to the local file to upload
@@ -419,7 +419,7 @@ class BbctrlAPI:
             return False
             
     def download_file(self, remote_path: str, local_path: str) -> bool:
-        """Download a file from the OneFinity controller.
+        """Download a file from the bbctrl controller.
         
         Args:
             remote_path: Path to the file on the controller
@@ -497,7 +497,7 @@ def print_changes(changes: Dict, prefix: str = '') -> None:
 
 def main():
     """Command-line interface for the Bbctrl API client."""
-    parser = argparse.ArgumentParser(description='Buildbotics/OneFinity Controller API Client')
+    parser = argparse.ArgumentParser(description='Buildbotics/bbctrl Controller API Client')
     parser.add_argument('--url', default='http://bbctrl.local',
                       help='Base URL of the controller (default: http://bbctrl.local)')
     parser.add_argument('--username', help='Username for authentication')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Debug script for OneFinity web interface
+Debug script for bbctrl web interface
 """
 import os
 import time
@@ -57,7 +57,7 @@ def main():
         print("Initializing Firefox WebDriver...")
         driver = webdriver.Firefox(service=Service(GeckoDriverManager().install()), options=options)
         
-        # Navigate to OneFinity controller
+        # Navigate to bbctrl controller
         url = "http://bbctrl.local"
         print(f"Navigating to {url}...")
         driver.get(url)

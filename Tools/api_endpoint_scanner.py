@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-OneFinity API Endpoint Scanner
+bbctrl API Endpoint Scanner
 
-This script scans for available API endpoints on the OneFinity controller.
+This script scans for available API endpoints on the bbctrl controller.
 """
 
 import requests
@@ -63,7 +63,7 @@ class EndpointScanner:
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Scan OneFinity Controller API Endpoints')
+    parser = argparse.ArgumentParser(description='Scan bbctrl Controller API Endpoints')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--wordlist', help='Path to wordlist file')
@@ -132,9 +132,7 @@ def main():
         '/auth',
         '/api/auth',
         
-        # OneFinity specific
-        '/onefinity/api',
-        '/onefinity/status',
+        # bbctrl specific
         '/bbctrl/api',
         '/bbctrl/status',
     ]

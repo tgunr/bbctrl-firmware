@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Check the /api/state endpoint of the OneFinity controller
+Check the /api/state endpoint of the bbctrl controller
 """
 
 import requests
 import json
 
 def get_state(host='bbctrl.local', port=80):
-    """Get the state from the OneFinity controller"""
+    """Get the state from the bbctrl controller"""
     url = f"http://{host}:{port}/api/state"
     
     headers = {
@@ -29,7 +29,7 @@ def get_state(host='bbctrl.local', port=80):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description='Check OneFinity Controller State')
+    parser = argparse.ArgumentParser(description='Check bbctrl Controller State')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--output', help='Output file to save the state')

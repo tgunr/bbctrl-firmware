@@ -26,7 +26,7 @@ class BbctrlController:
         self.csrf_token = None
 
     def login(self):
-        """Log in to the OneFinity controller"""
+        """Log in to the bbctrl controller"""
         try:
             # First, get the login page to extract CSRF token
             login_url = f"{self.base_url}/login"
@@ -45,7 +45,7 @@ class BbctrlController:
             # Prepare login data
             login_data = {
                 'username': self.username or 'admin',  # Default username
-                'password': self.password or 'onefinity'  # Default password
+                'password': self.password or 'bbctrl'  # Default password
             }
             
             if self.csrf_token:
@@ -113,7 +113,7 @@ class BbctrlController:
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Send G-code to OneFinity Controller')
+    parser = argparse.ArgumentParser(description='Send G-code to bbctrl Controller')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--username', help='Login username')
@@ -159,8 +159,8 @@ def main():
     else:
         print("No command specified. Use --gcode or --file option.")
         print("Example:")
-        print("  python onefinity_gcode.py --gcode 'G28'")
-        print("  python onefinity_gcode.py --file commands.gcode")
+        print("  python bbctrl_gcode.py --gcode 'G28'")
+        print("  python bbctrl_gcode.py --file commands.gcode")
 
 if __name__ == "__main__":
     main()

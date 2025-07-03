@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-G-code Stepper for OneFinity Controller
+G-code Stepper for bbctrl Controller
 
-This script reads a G-code file and sends commands one at a time to the OneFinity controller
+This script reads a G-code file and sends commands one at a time to the bbctrl controller
 via its web interface, waiting for user confirmation before sending each command.
 """
 

@@ -74,7 +74,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Set labels for better maintainability
 LABEL maintainer="Your Name <your.email@example.com>" \
-      description="Build environment for OneFinity controller firmware" \
+      description="Build environment for Bbctrl controller firmware" \
       version="1.0.0"
 
 # Default command - can be overridden

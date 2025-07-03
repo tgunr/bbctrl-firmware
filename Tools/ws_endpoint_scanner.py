@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-WebSocket Endpoint Scanner for OneFinity Controller
+WebSocket Endpoint Scanner for bbctrl Controller
 
-This script scans for WebSocket endpoints on the OneFinity controller.
+This script scans for WebSocket endpoints on the bbctrl controller.
 """
 
 import asyncio
@@ -87,7 +87,7 @@ async def scan_ws_endpoints(host, port=80, ssl=False, timeout=5):
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='WebSocket Endpoint Scanner for OneFinity Controller')
+    parser = argparse.ArgumentParser(description='WebSocket Endpoint Scanner for bbctrl Controller')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--ssl', action='store_true', help='Use HTTPS/WSS')

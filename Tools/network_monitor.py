@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Network Monitor for OneFinity Controller
+Network Monitor for bbctrl Controller
 
 This script helps monitor and analyze network traffic between the browser and the
-OneFinity controller by acting as a proxy. It can be used to understand the API
+bbctrl controller by acting as a proxy. It can be used to understand the API
 calls made by the web interface.
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -154,7 +154,7 @@ def start_proxy(port=8080):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description='Network Monitor for OneFinity Controller')
+    parser = argparse.ArgumentParser(description='Network Monitor for bbctrl Controller')
     parser.add_argument('--port', type=int, default=8080, help='Port to run the proxy server on')
     args = parser.parse_args()
     

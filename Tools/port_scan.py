@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Port Scanner for OneFinity Controller
+Port Scanner for bbctrl Controller
 
-This script scans for open WebSocket ports on the OneFinity controller
+This script scans for open WebSocket ports on the bbctrl controller
 and attempts to identify the correct WebSocket endpoint.
 """
 import asyncio
@@ -48,9 +48,8 @@ WS_PATHS = [
     '/ws/control',
     '/api/websocket',
     '/bbctrl/ws',
-    '/onefinity/ws',
+    '/bbctrl/ws',
     '/bbctrl/api/ws',
-    '/onefinity/api/ws',
 ]
 
 async def check_websocket(host, port, path, use_ssl=False, timeout=2):
@@ -150,7 +149,7 @@ async def scan_ports(host, ports=None, paths=None, use_ssl=False):
     
     print("\nNo WebSocket endpoints found on open ports.")
     print("You may need to:")
-    print("1. Check if the OneFinity controller is powered on and connected to the network")
+    print("1. Check if the bbctrl controller is powered on and connected to the network")
     print("2. Verify the hostname or IP address")
     print("3. Check if you need to be on the same network as the controller")
     print("4. Try connecting to the web interface in a browser first")
@@ -158,7 +157,7 @@ async def scan_ports(host, ports=None, paths=None, use_ssl=False):
 async def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Scan for OneFinity Controller WebSocket endpoints')
+    parser = argparse.ArgumentParser(description='Scan for bbctrl Controller WebSocket endpoints')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--ports', help='Comma-separated list of ports to scan')
     parser.add_argument('--ssl', action='store_true', help='Use secure WebSocket (wss)')

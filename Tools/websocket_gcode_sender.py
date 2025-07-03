@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-WebSocket G-code Sender for OneFinity Controller
+WebSocket G-code Sender for bbctrl Controller
 
-This script establishes a WebSocket connection to the OneFinity controller
+This script establishes a WebSocket connection to the bbctrl controller
 and sends G-code commands through it.
 """
 
@@ -13,7 +13,7 @@ import argparse
 import time
 from urllib.parse import urlparse, urlunparse
 
-class OneFinityWebSocket:
+class BbctrlWebSocket:
     def __init__(self, host='bbctrl.local', port=80, ssl=False):
         self.host = host
         self.port = port
@@ -141,7 +141,7 @@ async def interactive_shell(controller):
             print(f"Error: {e}")
 
 async def main():
-    parser = argparse.ArgumentParser(description='WebSocket G-code Sender for OneFinity Controller')
+    parser = argparse.ArgumentParser(description='WebSocket G-code Sender for bbctrl Controller')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     parser.add_argument('--ssl', action='store_true', help='Use secure WebSocket (WSS)')
@@ -152,7 +152,7 @@ async def main():
     args = parser.parse_args()
     
     # Create controller instance
-    controller = OneFinityWebSocket(
+    controller = BbctrlWebSocket(
         host=args.host,
         port=args.port,
         ssl=args.ssl

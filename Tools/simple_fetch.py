@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple script to fetch and analyze the OneFinity controller web interface
+Simple script to fetch and analyze the bbctrl controller web interface
 """
 import http.client
 import urllib.parse
@@ -34,9 +34,9 @@ def analyze_content(content):
         return
     
     # Save the raw content
-    with open("onefinity_page.html", "w", encoding="utf-8") as f:
+    with open("bbctrl_page.html", "w", encoding="utf-8") as f:
         f.write(content)
-    print("Saved page content to onefinity_page.html")
+    print("Saved page content to bbctrl_page.html")
     
     # Try to parse with BeautifulSoup
     try:
@@ -113,13 +113,13 @@ def analyze_content(content):
 
 def main():
     url = "http://bbctrl.local"
-    print(f"OneFinity Controller Web Interface Inspector\n{'='*50}\n")
+    print(f"bbctrl Controller Web Interface Inspector\n{'='*50}\n")
     
     content = fetch_url(url)
     if content:
         analyze_content(content)
     
-    print("\nInspection complete. Check onefinity_page.html for the full page source.")
+    print("\nInspection complete. Check bbctrl_page.html for the full page source.")
 
 if __name__ == "__main__":
     main()

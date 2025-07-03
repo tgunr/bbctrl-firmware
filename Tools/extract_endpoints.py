@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Extract WebSocket and API endpoints from OneFinity controller's main page.
+Extract WebSocket and API endpoints from bbctrl controller's main page.
 """
 
 import re

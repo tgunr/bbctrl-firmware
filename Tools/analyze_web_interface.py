@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analyze the OneFinity Controller Web Interface
+Analyze the bbctrl Controller Web Interface
 """
 
 import requests
@@ -138,7 +138,7 @@ class WebInterfaceAnalyzer:
 def main():
     import argparse
     
-    parser = argparse.ArgumentParser(description='Analyze OneFinity Controller Web Interface')
+    parser = argparse.ArgumentParser(description='Analyze bbctrl Controller Web Interface')
     parser.add_argument('--host', default='bbctrl.local', help='Controller hostname or IP')
     parser.add_argument('--port', type=int, default=80, help='Controller port')
     

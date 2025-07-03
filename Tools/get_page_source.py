@@ -17,7 +17,7 @@ def get_page_source():
         service = FirefoxService(GeckoDriverManager().install())
         driver = webdriver.Firefox(service=service, options=firefox_options)
         
-        # Navigate to the OneFinity controller
+        # Navigate to the bbctrl controller
         url = "http://bbctrl.local"
         print(f"Navigating to: {url}")
         driver.get(url)

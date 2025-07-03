@@ -100,7 +100,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Set labels for better maintainability
 LABEL maintainer="Your Name <your.email@example.com>" \
-      description="Development environment for OneFinity controller firmware" \
+      description="Development environment for Bbctrl controller firmware" \
       version="1.0.0"
 
 # Switch to non-root user
