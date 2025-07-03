@@ -44,7 +44,6 @@ def main():
                        help='Output format')
     parser.add_argument('--track', action='store_true', help='Track state changes between calls')
     parser.add_argument('--reset', action='store_true', help='Reset state tracking')
-    parser.add_argument('--full', action='store_true', help='Show full state (not just changes)')
     
     # Subcommands
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
@@ -53,10 +52,15 @@ def main():
     state_parser = subparsers.add_parser('state', help='Get controller state')
     state_parser.add_argument('--full', action='store_true', help='Show full state (not just changes)')
     
+    # Status command
+    status_parser = subparsers.add_parser('status', help='Get a quick overview of controller status')
+    
     # Config command
     config_parser = subparsers.add_parser('config', help='Get or update controller config')
     config_parser.add_argument('--get', action='store_true', help='Get current config')
     config_parser.add_argument('--download', metavar='FILE', help='Download config to file')
+    config_parser.add_argument('--upload', metavar='FILE', help='Upload config from file')
+    config_parser.add_argument('--update', metavar='JSON', help='Update config with JSON string')
     
     # Logs command
     logs_parser = subparsers.add_parser('logs', help='Get controller logs')
@@ -82,7 +86,8 @@ def main():
     
     # G-code command
     gcode_parser = subparsers.add_parser('gcode', help='Send G-code commands')
-    gcode_parser.add_argument('command', nargs='?', help='G-code command to send')
+    gcode_parser.add_argument('gcode_text', nargs='?', help='G-code command to send')
+    gcode_parser.add_argument('--cmd', help='G-code command to send (alternative to positional argument)')
     gcode_parser.add_argument('--file', help='File containing G-code commands')
     
     # Bug report command
@@ -122,18 +127,63 @@ def main():
         
         # Authenticate if credentials are provided
         if args.username and args.password:
-            if not api.login():
-                print("Authentication failed", file=sys.stderr)
+            try:
+                if not api.login():
+                    print("Authentication failed", file=sys.stderr)
+                    sys.exit(1)
+            except Exception as e:
+                print(f"Authentication error: {e}", file=sys.stderr)
                 sys.exit(1)
         
         # Execute the requested command
         if args.command == 'state':
-            state, changes = api.get_state()
-            # Show full state if --full is specified or if --reset was used
-            if args.full or args.reset:
-                print_json(state, args.output == 'pretty')
-            else:
-                print_changes(changes)
+            try:
+                state, changes = api.get_state()
+                # Show full state if --full is specified or if --reset was used
+                if hasattr(args, 'full') and args.full:
+                    print_json(state, args.output == 'pretty')
+                elif args.reset:
+                    print_json(state, args.output == 'pretty')
+                else:
+                    print_changes(changes)
+            except Exception as e:
+                print(f"Error getting state: {e}", file=sys.stderr)
+                sys.exit(1)
+                
+        elif args.command == 'status':
+            try:
+                state, _ = api.get_state()
+                
+                # Extract key status information
+                status = {
+                    'state': state.get('state', 'unknown'),
+                    'cycle': state.get('cycle', 'unknown'),
+                    'line': state.get('line', 0),
+                    'tool': state.get('tool', 0),
+                    'feed': state.get('feed', 0),
+                    'speed': state.get('speed', 0),
+                    'position': state.get('position', {}),
+                    'error': state.get('error', None)
+                }
+                
+                if args.output == 'pretty':
+                    print("Controller Status:")
+                    print(f"  State: {status['state']}")
+                    print(f"  Cycle: {status['cycle']}")
+                    print(f"  Line: {status['line']}")
+                    print(f"  Tool: {status['tool']}")
+                    print(f"  Feed: {status['feed']}")
+                    print(f"  Speed: {status['speed']}")
+                    print("  Position:")
+                    for axis, pos in status.get('position', {}).items():
+                        print(f"    {axis}: {pos}")
+                    if status['error']:
+                        print(f"  Error: {status['error']}")
+                else:
+                    print_json(status, False)
+            except Exception as e:
+                print(f"Error getting status: {e}", file=sys.stderr)
+                sys.exit(1)
             
         elif args.command == 'config':
             if args.download:
@@ -141,6 +191,29 @@ def main():
                     print(f"Configuration saved to {args.download}")
                 else:
                     print("Failed to download configuration", file=sys.stderr)
+                    sys.exit(1)
+            elif args.upload:
+                try:
+                    with open(args.upload, 'r') as f:
+                        config_data = json.load(f)
+                    result = api.update_config(config_data)
+                    print(f"Configuration uploaded successfully: {result}")
+                except json.JSONDecodeError:
+                    print(f"Error: {args.upload} contains invalid JSON", file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f"Error uploading configuration: {e}", file=sys.stderr)
+                    sys.exit(1)
+            elif args.update:
+                try:
+                    config_data = json.loads(args.update)
+                    result = api.update_config(config_data)
+                    print(f"Configuration updated successfully: {result}")
+                except json.JSONDecodeError:
+                    print("Error: Invalid JSON string provided", file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f"Error updating configuration: {e}", file=sys.stderr)
                     sys.exit(1)
             else:
                 config = api.get_config()
@@ -163,30 +236,39 @@ def main():
                     sys.exit(1)
                     
             elif args.files_command == 'download':
-                # This would require implementing download_file in the API client
-                print("Download not yet implemented", file=sys.stderr)
-                sys.exit(1)
+                if api.download_file(args.remote_path, args.local_path):
+                    print(f"Successfully downloaded {args.remote_path} to {args.local_path}")
+                else:
+                    print(f"Failed to download {args.remote_path}", file=sys.stderr)
+                    sys.exit(1)
                 
         elif args.command == 'gcode':
             if args.file:
                 with open(args.file, 'r') as f:
                     gcode = f.read().strip()
-            elif args.gcode:
-                gcode = args.gcode
+            elif args.cmd:
+                gcode = args.cmd
+            elif hasattr(args, 'gcode_text') and args.gcode_text:
+                gcode = args.gcode_text
             else:
                 print("No G-code command or file provided", file=sys.stderr)
                 sys.exit(1)
                 
             # Split multiple G-code commands by semicolon and send each one
-            for cmd in gcode.split(';'):
-                cmd = cmd.strip()
-                if cmd:  # Skip empty commands
-                    print(f"Sending: {cmd}")
-                    response = api.send_gcode(cmd)
-                    if args.output == 'pretty':
-                        print(f"Response for '{cmd}': {response}")
-                    else:
-                        print_json(response, False)
+            try:
+                commands = gcode.split(';')
+                for cmd in commands:
+                    cmd = cmd.strip()
+                    if cmd:  # Skip empty commands
+                        print(f"Sending: {cmd}")
+                        response = api.send_gcode(cmd)
+                        if args.output == 'pretty':
+                            print(f"Response for '{cmd}': {response}")
+                        else:
+                            print_json(response, False)
+            except Exception as e:
+                print(f"Error sending G-code: {e}", file=sys.stderr)
+                sys.exit(1)
             
         elif args.command == 'bugreport':
             if api.download_bugreport(args.output):
@@ -197,16 +279,30 @@ def main():
                 
         elif args.command == 'firmware':
             if args.firmware_command == 'check':
-                update_info = api.check_firmware_update()
-                print_json(update_info, args.output == 'pretty')
+                try:
+                    update_info = api.check_firmware_update()
+                    if update_info.get('status') == 'error':
+                        print(f"Error checking for firmware updates: {update_info.get('message')}", file=sys.stderr)
+                        sys.exit(1)
+                    print_json(update_info, args.output == 'pretty')
+                except Exception as e:
+                    print(f"Error checking for firmware updates: {e}", file=sys.stderr)
+                    sys.exit(1)
                 
             elif args.firmware_command == 'update':
                 if not os.path.isfile(args.firmware_file):
                     print(f"Firmware file not found: {args.firmware_file}", file=sys.stderr)
                     sys.exit(1)
-                    
-                result = api.update_firmware(args.firmware_file)
-                print_json(result, args.output == 'pretty')
+                
+                try:
+                    result = api.update_firmware(args.firmware_file)
+                    if result.get('status') == 'error':
+                        print(f"Error updating firmware: {result.get('message')}", file=sys.stderr)
+                        sys.exit(1)
+                    print_json(result, args.output == 'pretty')
+                except Exception as e:
+                    print(f"Error updating firmware: {e}", file=sys.stderr)
+                    sys.exit(1)
                 
         else:
             parser.print_help()
@@ -221,8 +317,9 @@ def main():
             traceback.print_exc()
         sys.exit(1)
 
-# ... [rest of the class definition] ...
+def run_cli():
+    """Entry point for the CLI when installed as a package."""
+    main()
 
-# This should be at module level, not indented
 if __name__ == "__main__":
     main()

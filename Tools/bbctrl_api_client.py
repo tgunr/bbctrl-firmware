@@ -95,7 +95,7 @@ class BbctrlAPI:
             'video': '/api/video',
             'files': '/api/fs',
             'download_config': '/api/config/download',
-            'firmware_update': 'firmware/update',
+            'firmware_update': '/api/firmware/update',
             'gcode': '/api/gcode'
         }
         
@@ -292,6 +292,17 @@ class BbctrlAPI:
             dict: Controller configuration
         """
         return self._make_request('GET', self.endpoints['config'])
+        
+    def update_config(self, config_data: Dict) -> Dict:
+        """Update the configuration of the OneFinity controller.
+        
+        Args:
+            config_data: Configuration data to update
+            
+        Returns:
+            dict: Result of the update operation
+        """
+        return self._make_request('POST', self.endpoints['config'], data=config_data)
     
     def get_logs(self, limit: int = 100) -> List[Dict]:
         """Get logs from the OneFinity controller.
@@ -403,6 +414,46 @@ class BbctrlAPI:
             logger.error(f"Error uploading file: {e}")
             return False
             
+    def download_file(self, remote_path: str, local_path: str) -> bool:
+        """Download a file from the OneFinity controller.
+        
+        Args:
+            remote_path: Path to the file on the controller
+            local_path: Local destination path
+            
+        Returns:
+            bool: True if download was successful, False otherwise
+        """
+        try:
+            endpoint = f"{self.endpoints['files']}/{remote_path.lstrip('/')}"
+            response = self.session.get(
+                urljoin(self.base_url, endpoint),
+                stream=True
+            )
+            
+            if response.status_code == 200:
+                with open(local_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                logger.info(f"Successfully downloaded {remote_path} to {local_path}")
+                return True
+            else:
+                logger.error(f"Failed to download file: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error downloading file: {e}")
+            return False
+    
+    def check_firmware_update(self) -> Dict:
+        """Check for firmware updates.
+        
+        Returns:
+            dict: Information about available updates
+        """
+        endpoint = '/api/firmware/check'
+        return self._make_request('GET', endpoint)
+        
     def update_firmware(self, firmware_file: str) -> Dict:
         """Update the controller's firmware.
         
