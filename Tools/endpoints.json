@@ -1,0 +1,19 @@
+{
+  "websocket_endpoints": [],
+  "api_endpoints": [
+    "http://bbctrl.local/api/bugreport",
+    "http://bbctrl.local/api/config/download",
+    "http://bbctrl.local/api/fs",
+    "http://bbctrl.local/api/fs/",
+    "http://bbctrl.local/api/log",
+    "http://bbctrl.local/api/video"
+  ],
+  "socket_events": [],
+  "other_endpoints": [
+    "fetch(a)",
+    "url: 'firmware/update"
+  ],
+  "links": [
+    "http://bbctrl.local/images/buildbotics_logo.png"
+  ]
+}
