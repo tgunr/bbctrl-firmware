@@ -2,22 +2,11 @@
 (LOGOPEN,log.txt)
 o<globals> call
 
-
-(MSG, you did check I/O pin shows when contacted?)
-(MSG, YOU HAVE BEEN WARNED!)
-(MSG, Position tool above probe block)
-(MSG, Press Cycle Start to probe)
+(MSG, WARNING: You did check I/O pin shows when contacted, right?  Position tool above probe block.  Press Cycle Start to probe)
 M0
 
-G21 G90                        ; Metric, absolute mode
-F100                           ; Set feed rate
-G38.2 Z[#<_z> - #<_probe_block_z>]        
-G0 Z[#<_z> + 5] ; Retract 
+o<probe_z> call
 
-F25
-G38.2 Z[#<_z> - 6]           ; Probe down 3mm from current position
-G10 L20 P1  Z[#<_probe_block_z>]
-G0 Z[#<_probe_block_z> + 10] ; Retract 
 
 (LOGCLOSE)
 
