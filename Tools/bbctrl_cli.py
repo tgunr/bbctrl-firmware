@@ -37,8 +37,8 @@ def main():
     parser = argparse.ArgumentParser(description='bbctrl Controller CLI')
     parser.add_argument('--url', default='http://bbctrl.local',
                        help='Base URL of the bbctrl controller')
-    parser.add_argument('--username', help='Username for authentication')
-    parser.add_argument('--password', help='Password for authentication')
+    parser.add_argument('--username', default='admin', help='Username for authentication (default: admin)')
+    parser.add_argument('--password', default='admin', help='Password for authentication (default: admin)')
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     parser.add_argument('--output', choices=['json', 'pretty'], default='pretty',
                        help='Output format')
@@ -125,15 +125,14 @@ def main():
             reset_state=args.reset
         )
         
-        # Authenticate if credentials are provided
-        if args.username and args.password:
-            try:
-                if not api.login():
-                    print("Authentication failed", file=sys.stderr)
-                    sys.exit(1)
-            except Exception as e:
-                print(f"Authentication error: {e}", file=sys.stderr)
-                sys.exit(1)
+        # Always try to authenticate with default or provided credentials
+        try:
+            if not api.login():
+                print("Authentication failed. Continuing without authentication...", file=sys.stderr)
+                # Continue without authentication - some commands might still work
+        except Exception as e:
+            print(f"Authentication error: {e}. Continuing without authentication...", file=sys.stderr)
+            # Continue without authentication - some commands might still work
         
         # Execute the requested command
         if args.command == 'state':

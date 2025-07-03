@@ -15,7 +15,7 @@ import requests
 import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any, Tuple
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, quote
 
 # Constants
 STATE_FILE = Path.home() / '.bbctrl_state.json'
@@ -198,10 +198,18 @@ class BbctrlAPI:
                 self.authenticated = True
                 logger.info("Successfully authenticated with the OneFinity controller")
                 return True
+            elif response.status_code == 404:
+                # If the auth endpoint doesn't exist, the controller might not require authentication
+                logger.info("Authentication endpoint not found, controller may not require authentication")
+                self.authenticated = True
+                return True
             else:
                 logger.error(f"Authentication failed: {response.status_code} - {response.text}")
                 return False
                 
+        except requests.exceptions.ConnectionError:
+            logger.warning("Could not connect to controller, continuing without authentication")
+            return True
         except Exception as e:
             logger.error(f"Error during authentication: {e}")
             return False
@@ -218,19 +226,15 @@ class BbctrlAPI:
         if not gcode.strip():
             return {'status': 'error', 'message': 'Empty G-code command'}
             
-        # Ensure we're authenticated
-        if not self.authenticated and not self.login():
-            return {'status': 'error', 'message': 'Authentication failed'}
-            
-        # Prepare the G-code endpoint
-        gcode_url = urljoin(self.base_url, '/api/gcode')
-        
+        # For local commands, we don't need authentication
+        # The API endpoint for G-code is a GET request with the command as a query parameter
         try:
-            # Send the G-code command
-            response = self.session.post(
-                gcode_url,
-                json={'gcode': gcode},
-                headers={'Content-Type': 'application/json'}
+            # Prepare the G-code endpoint with URL-encoded command
+            endpoint = f"{self.endpoints['gcode']}?{quote(gcode)}"
+            
+            # Send the G-code command as a GET request
+            response = self.session.get(
+                urljoin(self.base_url, endpoint)
             )
             
             # Parse the response
