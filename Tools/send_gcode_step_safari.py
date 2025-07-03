@@ -1,0 +1,481 @@
+#!/usr/bin/env python3
+"""
+G-code Stepper for bbctrl Controller - Safari Version
+
+This script reads a G-code file and sends commands one at a time to the bbctrl controller
+via its web interface, waiting for user confirmation before sending each command.
+Uses Safari instead of Firefox to avoid Firefox-specific errors.
+"""
+
+import os
+import sys
+import time
+import webbrowser
+import requests
+from urllib.parse import urljoin
+from selenium import webdriver
+from selenium.webdriver.safari.service import Service as SafariService
+from selenium.webdriver.safari.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+class GCodeStepper:
+    def __init__(self, gcode_file=None):
+        self.gcode_file = os.path.abspath(gcode_file) if gcode_file else None
+        self.base_url = "http://bbctrl.local"
+        self.control_url = f"{self.base_url}/#control"
+        self.driver = None
+        self.commands = []
+        self.current_line = 0
+        
+    def load_gcode(self, gcode_file=None):
+        """Load and parse the G-code file, removing comments and empty lines."""
+        if gcode_file:
+            self.gcode_file = os.path.abspath(gcode_file)
+            
+        if not self.gcode_file:
+            print("Error: No G-code file specified")
+            return False
+            
+        if not os.path.exists(self.gcode_file):
+            print(f"Error: File not found: {self.gcode_file}")
+            return False
+            
+        print(f"Loading G-code from: {self.gcode_file}")
+        try:
+            with open(self.gcode_file, 'r') as f:
+                lines = f.readlines()
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return False
+        
+        # Filter out comments and empty lines
+        for line in lines:
+            line = line.strip()
+            # Remove inline comments (everything after ';' or '()')
+            if ';' in line:
+                line = line.split(';', 1)[0].strip()
+            if line and not line.startswith('(') and not line.startswith(';'):
+                self.commands.append(line)
+        
+        print(f"Loaded {len(self.commands)} G-code commands from {self.gcode_file}")
+        return True
+
+    def setup_webdriver(self):
+        """Initialize the Selenium WebDriver with Safari."""
+        print("Setting up Safari WebDriver...")
+        print("Note: Make sure 'Allow Remote Automation' is enabled in Safari's Develop menu")
+        
+        try:
+            # Safari doesn't need many options like Chrome/Firefox
+            self.driver = webdriver.Safari()
+            
+            # Set a reasonable page load timeout
+            self.driver.set_page_load_timeout(30)
+            
+            print(f"Navigating to: {self.control_url}")
+            self.driver.get(self.control_url)
+            
+            # Wait for page to load
+            print("Waiting for page to load...")
+            time.sleep(5)  # Give it time to load
+            
+            # Take a screenshot for debugging
+            self.driver.save_screenshot("safari_page_loaded.png")
+            print("Initial page screenshot saved as safari_page_loaded.png")
+            
+            # Wait a bit more for any JavaScript to finish loading
+            print("Waiting for JavaScript to fully load...")
+            time.sleep(3)
+            
+            # Try multiple ways to find the MDI tab
+            print("\nLooking for MDI tab...")
+            mdi_found = False
+            
+            # Try different selectors for the MDI tab
+            selectors = [
+                (By.ID, "tab2"),
+                (By.CSS_SELECTOR, "[href='#mdi']"),
+                (By.CSS_SELECTOR, "a[data-toggle='tab'][href*='mdi']"),
+                (By.XPATH, "//a[contains(translate(., 'MDI', 'mdi'), 'mdi')]"),
+                (By.XPATH, "//*[contains(translate(., 'MANUAL', 'manual'), 'manual')]"),
+                (By.XPATH, "//*[contains(translate(., 'COMMAND', 'command'), 'command')]")
+            ]
+            
+            for by, selector in selectors:
+                try:
+                    print(f"Trying selector: {by} = {selector}")
+                    mdi_tab = WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable((by, selector))
+                    )
+                    print(f"Found MDI tab with {by} = {selector}")
+                    mdi_tab.click()
+                    time.sleep(2)  # Wait for tab to switch and load
+                    
+                    # Verify we actually switched to the MDI tab
+                    try:
+                        # Look for MDI-specific elements to confirm we're on the right tab
+                        mdi_indicators = [
+                            ".mdi-input",
+                            ".gcode-view",
+                            "#mdi",
+                            "textarea.gcode-view"
+                        ]
+                        
+                        tab_switched = False
+                        for indicator in mdi_indicators:
+                            try:
+                                element = self.driver.find_element(By.CSS_SELECTOR, indicator)
+                                if element:
+                                    print(f"Confirmed MDI tab active - found {indicator}")
+                                    tab_switched = True
+                                    break
+                            except:
+                                continue
+                        
+                        if tab_switched:
+                            mdi_found = True
+                            print("MDI tab found and clicked successfully!")
+                            break
+                        else:
+                            print("Tab click didn't switch to MDI - trying next selector")
+                            
+                    except Exception as e:
+                        print(f"Could not verify tab switch: {e}")
+                except Exception as e:
+                    print(f"  - Not found with {by} = {selector}")
+            
+            if not mdi_found:
+                print("Could not find/click MDI tab")
+                # Take a screenshot to help with debugging
+                self.driver.save_screenshot("safari_mdi_tab_error.png")
+                return False
+            
+            # Look for the G-code viewer textarea with enhanced visibility handling
+            print("\nLooking for G-code viewer textarea...")
+            
+            # First, let's try multiple selectors for the MDI input
+            mdi_selectors = [
+                (By.CLASS_NAME, "gcode-view"),
+                (By.ID, "mdi-command"),
+                (By.CSS_SELECTOR, "textarea[placeholder*='mdi']"),
+                (By.CSS_SELECTOR, "textarea[placeholder*='command']"),
+                (By.CSS_SELECTOR, ".mdi-input textarea"),
+                (By.CSS_SELECTOR, "#mdi textarea"),
+                (By.XPATH, "//textarea[contains(@class, 'mdi')]"),
+                (By.XPATH, "//textarea[contains(@placeholder, 'command')]")
+            ]
+            
+            mdi_input_found = False
+            for by, selector in mdi_selectors:
+                try:
+                    print(f"Trying MDI input selector: {by} = {selector}")
+                    gcode_viewer = WebDriverWait(self.driver, 3).until(
+                        EC.presence_of_element_located((by, selector))
+                    )
+                    print(f"Found MDI input with {by} = {selector}")
+                    
+                    # Check if it's visible and enabled
+                    if gcode_viewer.is_displayed() and gcode_viewer.is_enabled():
+                        print("MDI input is visible and enabled")
+                        self.mdi_input = gcode_viewer
+                        mdi_input_found = True
+                        break
+                    else:
+                        print(f"MDI input found but not visible/enabled: visible={gcode_viewer.is_displayed()}, enabled={gcode_viewer.is_enabled()}")
+                        
+                        # Try to make the element visible using JavaScript
+                        try:
+                            print("Attempting to make element visible...")
+                            script = """
+                            var element = arguments[0];
+                            
+                            // Force element visibility
+                            element.style.display = 'block';
+                            element.style.visibility = 'visible';
+                            element.style.opacity = '1';
+                            element.style.height = 'auto';
+                            element.style.width = 'auto';
+                            element.style.position = 'static';
+                            
+                            // Also try to show parent containers
+                            var parent = element.parentElement;
+                            while (parent && parent !== document.body) {
+                                parent.style.display = 'block';
+                                parent.style.visibility = 'visible';
+                                parent.style.opacity = '1';
+                                parent = parent.parentElement;
+                            }
+                            
+                            // Try to trigger any show/activate events
+                            var event = new Event('focus');
+                            element.dispatchEvent(event);
+                            
+                            return 'Element visibility modified';
+                            """
+                            result = self.driver.execute_script(script, gcode_viewer)
+                            print(f"Visibility script result: {result}")
+                            
+                            # Wait a moment and check again
+                            time.sleep(1)
+                            if gcode_viewer.is_displayed():
+                                print("Element is now visible after JavaScript modification!")
+                                self.mdi_input = gcode_viewer
+                                mdi_input_found = True
+                                break
+                            else:
+                                print("Element still not visible after JavaScript modification")
+                                # Try to use it anyway since it's enabled
+                                print("Attempting to use element despite visibility issues...")
+                                self.mdi_input = gcode_viewer
+                                mdi_input_found = True
+                                break
+                                
+                        except Exception as e:
+                            print(f"Error trying to make element visible: {e}")
+                            
+                except Exception as e:
+                    print(f"  - Not found with {by} = {selector}")
+            
+            if mdi_input_found:
+                try:
+                    # Try to send a test command
+                    print("Sending test command to verify MDI input...")
+                    self.mdi_input.clear()
+                    self.mdi_input.send_keys("; Test command")
+                    time.sleep(1)  # Wait for any UI updates
+                    
+                    # Take a screenshot after sending the test command
+                    self.driver.save_screenshot("safari_mdi_test_command.png")
+                    print("Test command sent. Check safari_mdi_test_command.png to verify.")
+                    
+                    # Clear the test command
+                    self.mdi_input.clear()
+                    return True
+                    
+                except Exception as e:
+                    print(f"Error sending test command: {e}")
+                    print("Continuing anyway - element may still work for actual commands")
+                    return True
+            else:
+                print("Could not find a suitable MDI input element")
+                
+                # List all textareas for debugging
+                print("\nAvailable textareas:")
+                textareas = self.driver.find_elements(By.TAG_NAME, "textarea")
+                for i, textarea in enumerate(textareas):
+                    print(f"  {i+1}. Class: {textarea.get_attribute('class')}")
+                    print(f"     ID: {textarea.get_attribute('id')}")
+                    print(f"     Visible: {textarea.is_displayed()}")
+                    print(f"     Enabled: {textarea.is_enabled()}")
+                
+                # Take a screenshot for debugging
+                self.driver.save_screenshot("safari_mdi_not_found.png")
+                print("\nScreenshot saved as safari_mdi_not_found.png")
+                
+                return False
+            
+        except Exception as e:
+            print(f"Error initializing Safari WebDriver: {e}")
+            print("Please make sure:")
+            print("1. Safari is installed")
+            print("2. 'Allow Remote Automation' is enabled in Safari > Develop menu")
+            print("3. If you don't see the Develop menu, enable it in Safari > Preferences > Advanced")
+            return False
+    
+    def verify_mdi_tab_active(self):
+        """Verify that we're actually on the MDI tab."""
+        try:
+            # Check if MDI tab is active by looking for active tab indicators
+            active_tab_selectors = [
+                ".nav-tabs .active",
+                ".tab-pane.active",
+                "[aria-selected='true']"
+            ]
+            
+            for selector in active_tab_selectors:
+                try:
+                    active_elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    for elem in active_elements:
+                        if elem.is_displayed():
+                            text = elem.text.lower()
+                            if 'mdi' in text or 'manual' in text or 'command' in text:
+                                print(f"✅ Confirmed MDI tab is active: {elem.text}")
+                                return True
+                except:
+                    continue
+            
+            print("❌ Warning: Could not confirm MDI tab is active")
+            return False
+            
+        except Exception as e:
+            print(f"Error verifying MDI tab: {e}")
+            return False
+
+    def send_gcode(self, command):
+        """Send a single G-code command to the controller."""
+        try:
+            # Verify we're on the MDI tab before sending
+            print(f"Sending command: {command}")
+            self.verify_mdi_tab_active()
+            
+            # Use the MDI input element we found during setup
+            if hasattr(self, 'mdi_input') and self.mdi_input:
+                self.mdi_input.clear()
+                self.mdi_input.send_keys(command)
+                
+                # Try to find and click a submit/send button with better selectors
+                try:
+                    # Fix the CSS selector - remove :contains() which isn't valid CSS
+                    send_buttons = self.driver.find_elements(By.CSS_SELECTOR, 
+                        "button[type='submit'], .btn-send, .send-button")
+                    
+                    # Also try XPath for buttons with "Send" text
+                    if not send_buttons:
+                        send_buttons = self.driver.find_elements(By.XPATH, 
+                            "//button[contains(text(), 'Send') or contains(text(), 'Execute') or contains(text(), 'Run')]")
+                    
+                    button_clicked = False
+                    for btn in send_buttons:
+                        if btn.is_displayed() and btn.is_enabled():
+                            btn.click()
+                            print(f"Clicked send button: {btn.text}")
+                            button_clicked = True
+                            break
+                    
+                    if not button_clicked:
+                        # If no send button found, try pressing Enter with proper line ending
+                        from selenium.webdriver.common.keys import Keys
+                        self.mdi_input.send_keys(Keys.RETURN)
+                        print("Pressed Enter to send command")
+                        
+                        # Also try Ctrl+Enter which some systems use
+                        time.sleep(0.5)
+                        self.mdi_input.send_keys(Keys.CONTROL + Keys.RETURN)
+                        print("Also tried Ctrl+Enter")
+                        
+                except Exception as e:
+                    print(f"Warning: Could not find send button: {e}")
+                    # Fallback - just press Enter
+                    try:
+                        from selenium.webdriver.common.keys import Keys
+                        self.mdi_input.send_keys(Keys.RETURN)
+                        print("Fallback: Pressed Enter to send command")
+                    except Exception as e2:
+                        print(f"Even fallback failed: {e2}")
+                
+                # Wait a moment and check for any response/feedback
+                time.sleep(2)
+                
+                # Take a screenshot after sending command to verify it was processed
+                try:
+                    self.driver.save_screenshot(f"safari_after_command_{self.current_line + 1}.png")
+                    print(f"Screenshot saved as safari_after_command_{self.current_line + 1}.png")
+                except:
+                    pass
+                
+                # Check for any error messages or status updates
+                try:
+                    # Look for error messages
+                    error_msgs = self.driver.find_elements(By.CSS_SELECTOR, ".alert-danger, .error-message, .status-error")
+                    for msg in error_msgs:
+                        if msg.is_displayed():
+                            print(f"⚠️  Error message detected: {msg.text[:100]}...")
+                    
+                    # Look for status messages
+                    status_msgs = self.driver.find_elements(By.CSS_SELECTOR, ".status-message, .machine-status, .state")
+                    for msg in status_msgs:
+                        if msg.is_displayed() and msg.text.strip():
+                            print(f"ℹ️  Status: {msg.text[:100]}...")
+                            
+                except Exception as e:
+                    print(f"Could not check status messages: {e}")
+                
+                print(f"Sent: {command}")
+                
+                # Ask user to confirm if machine is responding
+                response = input("Did the machine move or respond? [y/N]: ").strip().lower()
+                if response in ('y', 'yes'):
+                    print("✅ Command executed successfully!")
+                else:
+                    print("❌ Machine did not respond - command may not have been executed properly")
+                    
+                return True
+            else:
+                print("Error: MDI input element not available")
+                return False
+        except Exception as e:
+            print(f"Error sending command: {e}")
+            return False
+    
+    def run(self, gcode_file=None):
+        """Main loop to step through G-code commands."""
+        if not self.load_gcode(gcode_file):
+            return
+        
+        if not self.setup_webdriver():
+            return
+        
+        print("\n--- G-code Stepper (Safari Version) ---")
+        print("Press Enter to send the next command")
+        print("Type 'q' and press Enter to quit\n")
+        
+        while self.current_line < len(self.commands):
+            cmd = self.commands[self.current_line]
+            print(f"\n[{self.current_line + 1}/{len(self.commands)}] Next command: {cmd}")
+            
+            user_input = input("Send this command? [Y/n/q]: ").strip().lower()
+            
+            if user_input == 'q':
+                print("\nQuitting...")
+                break
+            elif user_input in ('', 'y', 'yes'):
+                if self.send_gcode(cmd):
+                    self.current_line += 1
+            else:
+                print("Skipping command")
+                self.current_line += 1
+        
+        print("\nFinished stepping through G-code commands.")
+        print("You can close the browser window when done.")
+
+    def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, 'driver') and self.driver:
+            try:
+                # Close the browser window but keep the session
+                self.driver.minimize_window()
+                print("\nBrowser window minimized. You can close it when done.")
+                print("Note: The browser will close automatically when you exit this script.")
+            except:
+                # If minimize fails, just continue
+                pass
+
+def main():
+    # Check if a file was provided as a command-line argument
+    gcode_file = None
+    if len(sys.argv) > 1:
+        gcode_file = sys.argv[1]
+    
+    # If no file provided, prompt the user
+    while not gcode_file:
+        gcode_file = input("Enter the path to your G-code file: ").strip()
+        if not gcode_file:
+            print("No file specified. Please try again or press Ctrl+C to exit.")
+    
+    stepper = GCodeStepper()
+    try:
+        stepper.run(gcode_file)
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        stepper.cleanup()
+
+if __name__ == "__main__":
+    main()

@@ -1,12 +1,2 @@
-# Requirements for Hybrid G-code Sender and related tools
-
-# Core dependencies for API communication
-requests>=2.25.0
-
-# WebSocket support
-websocket-client>=1.0.0
-
-# Optional dependencies for existing tools
-beautifulsoup4>=4.9.0  # For bbctrl_gcode.py
-selenium>=4.0.0  # For send_gcode_step.py (legacy)
-webdriver-manager>=3.8.0  # For send_gcode_step.py (legacy)
+websocket-client>=1.8.0
+requests>=2.32.0

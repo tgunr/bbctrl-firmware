@@ -40,20 +40,37 @@ class FileSystem:
   def __init__(self, ctrl):
     self.ctrl      = ctrl
     self.log       = ctrl.log.get('FS')
+    
+    try:
+      self.log.info('FileSystem.__init__() starting')
+      self.log.info('Controller root: %s' % repr(ctrl.root))
 
-    upload = self.ctrl.root + '/upload'
-    os.environ['GCODE_SCRIPT_PATH'] = upload
+      upload = self.ctrl.root + '/upload'
+      self.log.info('Upload directory: %s' % repr(upload))
+      os.environ['GCODE_SCRIPT_PATH'] = upload
 
-    if not os.path.exists(upload):
-      os.mkdir(upload)
-      from shutil import copy
-      copy(util.get_resource('http/buildbotics.nc'), upload)
+      if not os.path.exists(upload):
+        self.log.info('Upload directory does not exist, creating it')
+        os.mkdir(upload)
+        from shutil import copy
+        copy(util.get_resource('http/buildbotics.nc'), upload)
+        self.log.info('Created upload directory and copied buildbotics.nc')
+      else:
+        self.log.info('Upload directory already exists')
 
-    self._update_locations()
-    self._update_first_file()
+      self.log.info('Updating locations...')
+      self._update_locations()
+      self.log.info('Updating first file...')
+      self._update_first_file()
 
-    ctrl.events.on('invalidate', self._invalidate)
-    ctrl.udevev.add_handler(self._udev_event, 'block')
+      self.log.info('Setting up event handlers...')
+      ctrl.events.on('invalidate', self._invalidate)
+      ctrl.udevev.add_handler(self._udev_event, 'block')
+      self.log.info('FileSystem.__init__() completed successfully')
+      
+    except Exception as e:
+      self.log.exception('Exception in FileSystem.__init__(): %s' % str(e))
+      raise
 
 
   def _invalidate(self, path):
@@ -91,18 +108,36 @@ class FileSystem:
 
 
   def realpath(self, path):
-    path = os.path.normpath(path)
-    parts = path.split('/', 1)
+    try:
+      self.log.info('FileSystem.realpath() called with path: %s' % repr(path))
+      path = os.path.normpath(path)
+      self.log.info('Normalized path: %s' % repr(path))
+      parts = path.split('/', 1)
+      self.log.info('Path parts: %s' % repr(parts))
 
-    if not len(parts): return ''
-    path = parts[1] if len(parts) == 2 else ''
+      if not len(parts):
+        self.log.info('No path parts, returning empty string')
+        return ''
+      path = parts[1] if len(parts) == 2 else ''
+      self.log.info('Remaining path after first part: %s' % repr(path))
 
-    if parts[0] == 'Home': return self.ctrl.root + '/upload/' + path
+      if parts[0] == 'Home':
+        result = self.ctrl.root + '/upload/' + path
+        self.log.info('Home path resolved to: %s' % repr(result))
+        return result
 
-    usb = '/media/' + parts[0]
-    if os.path.exists(usb): return usb + '/' + path
+      usb = '/media/' + parts[0]
+      self.log.info('Checking USB path: %s' % repr(usb))
+      if os.path.exists(usb):
+        result = usb + '/' + path
+        self.log.info('USB path exists, resolved to: %s' % repr(result))
+        return result
 
-    return ''
+      self.log.warning('Path could not be resolved, returning empty string')
+      return ''
+    except Exception as e:
+      self.log.exception('Exception in FileSystem.realpath(): %s' % str(e))
+      raise
 
 
   def exists(self, path): return os.path.exists(self.realpath(path))

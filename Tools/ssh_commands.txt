@@ -1,0 +1,28 @@
+# SSH Commands to Diagnose /api/fs/ Error
+# Copy and paste these commands one by one into your SSH session to the controller
+
+# 1. Check current service status
+sudo systemctl status bbctrl --no-pager
+
+# 2. Check current logs (last 20 lines)
+sudo tail -20 /var/log/bbctrl.log
+
+# 3. Restart the service to apply diagnostic logging
+sudo systemctl restart bbctrl
+
+# 4. Wait for service to start
+sleep 5
+
+# 5. Check service status after restart
+sudo systemctl status bbctrl --no-pager
+
+# 6. Check new logs with diagnostic output (last 50 lines)
+sudo tail -50 /var/log/bbctrl.log
+
+# 7. Test the API endpoint to trigger logging
+curl -v http://localhost:8080/api/fs/
+
+# 8. Check final logs to see the diagnostic output
+sudo tail -30 /var/log/bbctrl.log
+
+# Look for lines containing "FileSystem" in the log output to identify the issue

@@ -75,24 +75,41 @@ class Ctrl:
         self.log.get('Ctrl').info('Starting %s' % self.id)
 
         try:
+            self.log.get('Ctrl').info('Initializing AVR...')
             if args.demo: self.avr = AVREmu(self)
             else: self.avr = AVR(self)
 
+            self.log.get('Ctrl').info('Initializing I2C...')
             self.i2c = I2C(args.i2c_port, args.demo)
+            self.log.get('Ctrl').info('Initializing LCD...')
             self.lcd = LCD(self)
+            self.log.get('Ctrl').info('Initializing Mach...')
             self.mach = Mach(self, self.avr)
+            self.log.get('Ctrl').info('Initializing Preplanner...')
             self.preplanner = Preplanner(self)
+            self.log.get('Ctrl').info('Initializing FileSystem...')
             self.fs = FileSystem(self)
+            self.log.get('Ctrl').info('FileSystem initialized successfully')
+            self.log.get('Ctrl').info('Initializing Network...')
             self.net = Network(self)
-            if not args.demo: self.jog = Jog(self)
+            if not args.demo:
+                self.log.get('Ctrl').info('Initializing Jog...')
+                self.jog = Jog(self)
+            self.log.get('Ctrl').info('Initializing Pwr...')
             self.pwr = Pwr(self)
 
+            self.log.get('Ctrl').info('Connecting Mach...')
             self.mach.connect()
 
+            self.log.get('Ctrl').info('Adding LCD pages...')
             self.lcd.add_new_page(MainLCDPage(self))
             self.lcd.add_new_page(IPLCDPage(self.lcd))
+            
+            self.log.get('Ctrl').info('Controller initialization completed successfully')
 
-        except Exception: self.log.get('Ctrl').exception()
+        except Exception as e:
+            self.log.get('Ctrl').exception('Exception during controller initialization: %s' % str(e))
+            raise
 
 
     def __del__(self): print('Ctrl deleted')
