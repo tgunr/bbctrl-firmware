@@ -38,3 +38,5 @@ Upload/Macros/Test1.ngc
 src/before_mdi_click.png
 Tools/*.png
 Tools/endpoint_scan_results.txt
+Tools/gcode_debugger/Issue.txt
+Tools/gcode_debugger/MSG_DEBUG_FIX_SUMMARY.md

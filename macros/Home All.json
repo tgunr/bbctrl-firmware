@@ -1,0 +1,12 @@
+{
+  "name": "Home All",
+  "description": "Home all axes to their limit switches",
+  "commands": [
+    "G28"
+  ],
+  "created_date": "2025-07-05T12:27:28.510974",
+  "modified_date": "2025-07-05T12:27:28.510974",
+  "category": "homing",
+  "color": "#4CAF50",
+  "hotkey": ""
+}
