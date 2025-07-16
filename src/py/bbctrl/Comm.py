@@ -173,7 +173,11 @@ class Comm(ABC):
 
         except Exception as e:
             self.log.warning('AVR reload failed: %s', traceback.format_exc())
-            self.ctrl.ioloop.call_later(1, self.connect)
+            # Don't schedule reconnect here - let AVR handle it
+            if hasattr(self.avr, '_schedule_reconnect'):
+                self.avr._schedule_reconnect()
+            else:
+                self.ctrl.ioloop.call_later(1, self.connect)
 
 
     def _log_msg(self, msg):
@@ -284,4 +288,8 @@ class Comm(ABC):
 
         except Exception as e:
             self.log.warning('Connect failed: %s', e)
-            self.ctrl.ioloop.call_later(1, self.connect)
+            # Don't schedule reconnect here - let AVR handle it
+            if hasattr(self.avr, '_schedule_reconnect'):
+                self.avr._schedule_reconnect()
+            else:
+                self.ctrl.ioloop.call_later(1, self.connect)
