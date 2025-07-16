@@ -41,3 +41,4 @@ Tools/endpoint_scan_results.txt
 Tools/gcode_debugger/Issue.txt
 Tools/gcode_debugger/MSG_DEBUG_FIX_SUMMARY.md
 .vscode/
+Tools/gcode_debugger/.mcphost.yml
