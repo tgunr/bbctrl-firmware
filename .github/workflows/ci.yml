@@ -28,7 +28,9 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run --rm bbctrl-dev:test pytest src/py/bbctrl/test
+          # Run core firmware tests **and** the revived gcode_debugger tests
+          docker run --rm bbctrl-dev:test bash -c "\
+            pytest src/py/bbctrl/test Tools/gcode_debugger/tests"
 
       - name: Run linting
         run: |

@@ -26,11 +26,40 @@
 ################################################################################
 
 import os
-import serial
 import time
 import traceback
 import ctypes
 import math
+
+# Optional runtime dependency: pyserial
+# Provide a lightweight stub so that modules can still import AVR
+# in environments where pyserial isn't installed (e.g. CI or doc generation).
+# The real Serial implementation is only required when hardware
+# access is needed.  Tests that merely import the module will succeed.
+try:
+    import serial  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover
+    import types, sys
+    serial = types.ModuleType("serial")                    # type: ignore
+    class _DummySerial:                                    # pylint: disable=too-few-public-methods
+        def __init__(self, *_, **__):
+            pass
+        # API subset used in AVR
+        def nonblocking(self):            # noqa: D401
+            pass
+        def reset_output_buffer(self):
+            pass
+        def read(self, _n):               # noqa: D401
+            return b""
+        def write(self, _data):           # noqa: D401
+            return 0
+        def close(self):                  # noqa: D401
+            pass
+        in_waiting = 0                    # mimic property
+
+    serial.Serial = _DummySerial          # type: ignore
+    serial.SerialException = Exception    # type: ignore
+    sys.modules["serial"] = serial
 
 __all__ = ['AVR']
 
