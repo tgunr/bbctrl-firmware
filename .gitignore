@@ -30,15 +30,17 @@ __pycache__
 venv/
 CAMotics/
 cbang/
+.vscode/
 # Ignore image directory with build artifacts
 image/
 Upload/Projects
 log.txt
 Upload/Macros/Test1.ngc
 src/before_mdi_click.png
+temp.py
 Tools/*.png
 Tools/endpoint_scan_results.txt
 Tools/gcode_debugger/Issue.txt
 Tools/gcode_debugger/MSG_DEBUG_FIX_SUMMARY.md
-.vscode/
 Tools/gcode_debugger/.mcphost.yml
+external_macros/
