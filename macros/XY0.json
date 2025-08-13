@@ -1,0 +1,12 @@
+{
+  "name": "XY0",
+  "description": "Synced from controller: XY0",
+  "commands": [
+    "{'name': 'XY0', 'category': 'Macros', 'description': '', 'path': 'Home/Macros/XY0.ngc', 'modified': '2025-06-24T17:32:02Z', 'size': 87, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:35:55.098939",
+  "modified_date": "2025-08-13T08:35:57.142818",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}

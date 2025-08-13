@@ -1,0 +1,12 @@
+{
+  "name": "Spoilboard-Y",
+  "description": "Synced from controller: Spoilboard-Y",
+  "commands": [
+    "{'name': 'Spoilboard-Y', 'category': 'Macros', 'description': '', 'path': 'Home/Macros/Spoilboard-Y.ngc', 'modified': '2025-05-17T18:20:36Z', 'size': 1540, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:40:58.803931",
+  "modified_date": "2025-08-13T09:50:41.556272",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}

@@ -1,0 +1,12 @@
+{
+  "name": "globals",
+  "description": "Synced from controller: globals",
+  "commands": [
+    "{'name': 'globals', 'category': 'Subroutines', 'description': '', 'path': 'Home/Subroutines/globals.nc', 'modified': '2025-07-02T18:13:33Z', 'size': 644, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:35:54.857819",
+  "modified_date": "2025-08-13T08:35:57.141338",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}

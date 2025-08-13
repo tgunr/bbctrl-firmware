@@ -1,0 +1,12 @@
+{
+  "name": "Z0",
+  "description": "Synced from controller: Z0",
+  "commands": [
+    "{'name': 'Z0', 'category': 'Macros', 'description': '', 'path': 'Home/Macros/Z0.ngc', 'modified': '2025-06-24T18:07:14Z', 'size': 82, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:40:58.089032",
+  "modified_date": "2025-08-13T09:50:41.557692",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}

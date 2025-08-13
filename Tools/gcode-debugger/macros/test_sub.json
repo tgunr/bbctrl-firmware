@@ -1,0 +1,12 @@
+{
+  "name": "test_sub",
+  "description": "Synced from controller: test_sub",
+  "commands": [
+    "{'name': 'test_sub', 'category': 'Subroutines', 'description': '', 'path': 'Home/Subroutines/test_sub.nc', 'modified': '2025-07-01T14:34:17Z', 'size': 76, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:40:58.132524",
+  "modified_date": "2025-08-13T09:50:41.555791",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}

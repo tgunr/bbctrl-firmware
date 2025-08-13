@@ -1,0 +1,12 @@
+{
+  "name": "Rose2_Sheet 2_2-Rose Male",
+  "description": "Synced from controller: Rose2_Sheet 2_2-Rose Male",
+  "commands": [
+    "{'name': 'Rose2_Sheet 2_2-Rose Male', 'category': 'Rose2', 'description': '', 'path': 'Home/Projects/Rose2/Rose2_Sheet 2_2-Rose Male.ngc', 'modified': '2025-06-13T15:40:33Z', 'size': 389497, '__module__': 'core.communication', '__dict__': <attribute '__dict__' of 'Macro' objects>, '__weakref__': <attribute '__weakref__' of 'Macro' objects>, '__doc__': None}"
+  ],
+  "created_date": "2025-08-13T08:35:55.211596",
+  "modified_date": "2025-08-13T08:35:57.140429",
+  "category": "system",
+  "color": "#e6e6e6",
+  "hotkey": ""
+}
