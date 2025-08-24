@@ -1,0 +1,12 @@
+.dockerignore
+.gitignore
+.gitmodules
+.kilcodeignore
+avr-toolchain-macos.tar.gz
+CHANGELOG.md
+CODE_TAG
+.claude/
+.github/
+.kilocode/
+.pytest_cache/
+.ropeproject/
