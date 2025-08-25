@@ -52,6 +52,7 @@ RUN apt-get update \
         libxft-dev \
         libxinerama-dev \
         libxcursor-dev \
+        libv8-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/archives/*
