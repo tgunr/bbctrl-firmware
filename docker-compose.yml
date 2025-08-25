@@ -13,7 +13,6 @@ x-common-volumes:
   common: &common-volumes
     - .:/build
     - ./build:/build/build
-    - node-modules:/build/node_modules
     - ./dist:/build/dist
 
 services:
@@ -24,10 +23,10 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
+        - USER_ID=${USER_UID:-501}
+        - GROUP_ID=${USER_GID:-20}
     volumes: *common-volumes
     environment: *common-env
-    # Run container as current host user to avoid permission issues when mounting the repo
-    user: "${UID:-1000}:${GID:-1000}"
     # Set resource limits
     deploy:
       resources:
@@ -53,14 +52,13 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - NODE_ENV=development
+        - USER_ID=${USER_UID:-501}
+        - GROUP_ID=${USER_GID:-20}
     volumes:
       - .:/build
       - ./build:/build/build
-      - node-modules:/build/node_modules
       - ./dist:/build/dist
       - venv:/venv
-    # Run as current user to avoid permission issues
-    user: "${UID:-1000}:${GID:-1000}"
     environment:
       <<: *common-env
       NODE_ENV: development
@@ -96,9 +94,6 @@ services:
 
 # Define named volumes for better persistence
 volumes:
-  node-modules:
-    name: bbctrl-node-modules
-    driver: local
   venv:
     name: bbctrl-venv
     driver: local
