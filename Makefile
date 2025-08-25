@@ -63,14 +63,44 @@ demo: html resources bbemu
 bbemu:
 	$(MAKE) -C src/avr/emu
 
-pkg: all $(SUBPROJECTS)
+pkg: all $(SUBPROJECTS) arm-bin
 	./setup.py sdist
 
 beta-pkg: pkg
 	cp dist/$(PKG_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
 	echo -n $(BETA_VERSION) > dist/latest-beta.txt
 
-arm-bin: bbkbd updiprog rpipdi
+arm-bin: bbkbd updiprog rpipdi camotics
+
+bbkbd:
+	@if [ ! -d bbkbd ]; then \
+		git clone https://github.com/buildbotics/bbkbd; \
+	fi
+	-$(MAKE) -C bbkbd && mkdir -p bin && cp bbkbd/bbkbd bin/ || echo "Warning: bbkbd build failed, skipping"
+
+updiprog:
+	@if [ ! -d updiprog ]; then \
+		git clone https://github.com/buildbotics/updiprog; \
+	fi
+	-$(MAKE) -C updiprog && mkdir -p bin && cp updiprog/updiprog bin/ || echo "Warning: updiprog build failed, skipping"
+
+rpipdi:
+	@if [ ! -d rpipdi ]; then \
+		git clone https://github.com/buildbotics/rpipdi; \
+	fi
+	-$(MAKE) -C rpipdi && mkdir -p bin && cp rpipdi/rpipdi bin/ || echo "Warning: rpipdi build failed, skipping"
+
+camotics:
+	@if [ ! -d cbang ]; then \
+		git clone https://github.com/CauldronDevelopmentLLC/cbang; \
+	fi
+	@if [ ! -d camotics ]; then \
+		git clone https://github.com/CauldronDevelopmentLLC/camotics; \
+	fi
+	-export CBANG_HOME=$$PWD/cbang && \
+	scons -C cbang -j$$(nproc) v8_compress_pointers=0 && \
+	scons -C camotics -j$$(nproc) build/camotics.so with_gui=0 wrap_glibc=0 && \
+	mkdir -p bin && cp camotics/build/camotics.so bin/ || echo "Warning: camotics build failed, skipping"
 
 %.img.xz: %.img
 	xz -T $(CPUS) $<
@@ -148,7 +178,7 @@ tidy:
 	rm -f $(shell find "$(DIR)" -name \*~)
 
 clean: tidy
-	rm -rf build html dist
+	rm -rf build html dist bin bbkbd updiprog rpipdi cbang camotics
 	@for SUB in $(SUBPROJECTS); do \
 	  $(MAKE) -C src/$$SUB clean; \
 	done

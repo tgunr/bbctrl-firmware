@@ -45,6 +45,13 @@ RUN apt-get update \
         libssl-dev \
         python3-dev \
         libx11-dev \
+        pkg-config \
+        libfontconfig1-dev \
+        libfreetype6-dev \
+        libxtst-dev \
+        libxft-dev \
+        libxinerama-dev \
+        libxcursor-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/archives/*
