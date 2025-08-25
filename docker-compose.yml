@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Define common environment variables
 x-common-env: &common-env
   CAMOTICS_HOME: ${CAMOTICS_HOME:-/opt/camotics}
@@ -11,11 +9,12 @@ x-common-env: &common-env
   PYTHONDONTWRITEBYTECODE: 1
 
 # Define common volumes
-x-common-volumes: &common-volumes
-  - .:/build
-  - build-cache:/build/build
-  - node-modules:/build/node_modules
-  - dist-output:/build/dist
+x-common-volumes:
+  common: &common-volumes
+    - .:/build
+    - ./build:/build/build
+    - node-modules:/build/node_modules
+    - ./dist:/build/dist
 
 services:
   # Production build service
@@ -23,13 +22,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: builder
       args:
         - BUILDKIT_INLINE_CACHE=1
     volumes: *common-volumes
     environment: *common-env
-    # Run as non-root user (defined in Dockerfile)
-    user: "builder"
+    # Run container as current host user to avoid permission issues when mounting the repo
+    user: "${UID:-1000}:${GID:-1000}"
     # Set resource limits
     deploy:
       resources:
@@ -56,7 +54,10 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - NODE_ENV=development
     volumes:
-      - *common-volumes
+      - .:/build
+      - ./build:/build/build
+      - node-modules:/build/node_modules
+      - ./dist:/build/dist
       - venv:/venv
     # Run as current user to avoid permission issues
     user: "${UID:-1000}:${GID:-1000}"
@@ -95,14 +96,8 @@ services:
 
 # Define named volumes for better persistence
 volumes:
-  build-cache:
-    name: bbctrl-build-cache
-    driver: local
   node-modules:
     name: bbctrl-node-modules
-    driver: local
-  dist-output:
-    name: bbctrl-dist-output
     driver: local
   venv:
     name: bbctrl-venv
