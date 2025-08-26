@@ -1,10 +1,11 @@
 # Define common environment variables
 x-common-env: &common-env
-  CAMOTICS_HOME: ${CAMOTICS_HOME:-/opt/camotics}
-  CBANG_HOME: ${CBANG_HOME:-/opt/cbang}
-  UPDIPROG_HOME: ${UPDIPROG_HOME:-/opt/updiprog}
-  RPIPDI_HOME: ${RPIPDI_HOME:-/opt/rpipdi}
-  BBKBD_HOME: ${BBKBD_HOME:-/opt/bbkbd}
+  CAMOTICS_HOME: ${CAMOTICS_HOME:-/build/camotics}
+  CBANG_HOME: ${CBANG_HOME:-/build/cbang}
+  UPDIPROG_HOME: ${UPDIPROG_HOME:-/build/updiprog}
+  RPIPDI_HOME: ${RPIPDI_HOME:-/build/rpipdi}
+  BBKBD_HOME: ${BBKBD_HOME:-/build/bbkbd}
+  V8_HOME: ${V8_HOME:-/usr/include/node}
   PYTHONUNBUFFERED: 1
   PYTHONDONTWRITEBYTECODE: 1
 
