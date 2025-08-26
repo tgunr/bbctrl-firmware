@@ -90,17 +90,23 @@ rpipdi:
 	fi
 	-$(MAKE) -C rpipdi && mkdir -p bin && cp rpipdi/rpipdi bin/ || echo "Warning: rpipdi build failed, skipping"
 
-camotics:
+bin/camotics.so:
+	@echo "Building camotics.so..."
 	@if [ ! -d cbang ]; then \
 		git clone https://github.com/CauldronDevelopmentLLC/cbang; \
 	fi
 	@if [ ! -d camotics ]; then \
 		git clone https://github.com/CauldronDevelopmentLLC/camotics; \
 	fi
-	-export CBANG_HOME=$$PWD/cbang && \
-	scons -C cbang -j$$(nproc) v8_compress_pointers=0 && \
-	scons -C camotics -j$$(nproc) build/camotics.so with_gui=0 wrap_glibc=0 && \
-	mkdir -p bin && cp camotics/build/camotics.so bin/ || echo "Warning: camotics build failed, skipping"
+	@mkdir -p bin
+	@echo "Building cbang dependency..."
+	-cd cbang && scons -j$(CPUS) v8_compress_pointers=0 && cd .. && \
+	echo "Building camotics.so..." && \
+	export CBANG_HOME=$$PWD/cbang && \
+	cd camotics && scons -j$(CPUS) build/camotics.so with_gui=0 wrap_glibc=0 && cd .. && \
+	cp camotics/build/camotics.so bin/ || echo "Warning: camotics build failed, skipping"
+
+camotics: bin/camotics.so
 
 %.img.xz: %.img
 	xz -T $(CPUS) $<
