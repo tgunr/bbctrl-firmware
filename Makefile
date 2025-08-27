@@ -17,17 +17,11 @@ RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\#* \*~ .\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
-# Check if build info exists and use it
-BUILD_INFO_EXISTS := $(shell test -f .build-info.json && echo "yes" || echo "no")
-ifeq ($(BUILD_INFO_EXISTS),yes)
-  BUILD_COMMIT := $(shell cat .build-info.json | grep -o '"commit": "[^"]*' | cut -d'"' -f4)
-  BASE_VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
-  VERSION := $(BASE_VERSION)+build.$(BUILD_COMMIT)
-  $(info Using build info: $(VERSION))
-else
-  VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
-  $(info No build info found, using base version: $(VERSION))
-endif
+# Simple dev version incrementer
+BASE_VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
+DEV_VERSION := $(shell ./scripts/manage-dev-version increment)
+VERSION := $(BASE_VERSION).dev$(DEV_VERSION)
+$(info Using dev version: $(VERSION))
 
 PKG_NAME := bbctrl-$(VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
