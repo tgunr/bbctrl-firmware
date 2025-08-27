@@ -78,11 +78,53 @@ class VersionManager:
 
         with open(self.package_json, 'r') as f:
             data = json.load(f)
-            return data.get('version', '0.0.0')
+            version_str = data.get('version', '0.0.0')
 
-    def set_version(self, version_string):
+        # Strip build metadata for version management purposes
+        # This allows us to work with the base version for comparisons
+        try:
+            version = Version(version_str)
+            if version.build:
+                # Remove build metadata for version management
+                base_version = f"{version.major}.{version.minor}.{version.patch}"
+                if version.prerelease:
+                    base_version += f"-{version.prerelease}"
+                return base_version
+            return version_str
+        except ValueError:
+            # If parsing fails, return as-is
+            return version_str
+
+    def get_current_commit(self):
+        """Get current git commit hash (short)."""
+        try:
+            import subprocess
+            result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
+                                  capture_output=True, text=True, cwd=self.project_root)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+        return None
+
+    def set_version(self, version_string, include_commit=True):
         """Set version in all relevant files."""
-        version = Version(version_string)
+        # Create base version first
+        base_version = Version(version_string)
+
+        # Add commit hash to build metadata if requested
+        if include_commit:
+            commit = self.get_current_commit()
+            if commit:
+                try:
+                    version = base_version.with_build(f"build.{commit}")
+                except Exception as e:
+                    print(f"Warning: Could not add build metadata: {e}")
+                    version = base_version
+            else:
+                version = base_version
+        else:
+            version = base_version
 
         # Update package.json
         if self.package_json.exists():
@@ -110,7 +152,7 @@ class VersionManager:
 
             print(f"Updated {self.pkg_info} to {version}")
 
-    def bump_version(self, bump_type):
+    def bump_version(self, bump_type, include_commit=True):
         """Bump version according to type."""
         current = self.get_current_version()
         version = Version(current)
@@ -126,16 +168,16 @@ class VersionManager:
         else:
             raise ValueError(f"Unknown bump type: {bump_type}")
 
-        self.set_version(str(new_version))
+        self.set_version(str(new_version), include_commit)
         print(f"Bumped {bump_type}: {current} → {new_version}")
 
-    def next_stage(self):
+    def next_stage(self, include_commit=True):
         """Move to next development stage."""
         current = self.get_current_version()
         version = Version(current)
         new_version = version.next_stage()
 
-        self.set_version(str(new_version))
+        self.set_version(str(new_version), include_commit)
         print(f"Advanced to next stage: {current} → {new_version}")
         print(f"New stage: {new_version.get_stage()}")
 
@@ -203,9 +245,13 @@ Examples:
     bump_parser = subparsers.add_parser('bump', help='Bump version')
     bump_parser.add_argument('type', choices=['major', 'minor', 'patch', 'prerelease'],
                            help='Type of version bump')
+    bump_parser.add_argument('--no-commit', action='store_true',
+                           help='Do not include git commit hash in build metadata')
 
     # next-stage command
-    subparsers.add_parser('next-stage', help='Move to next development stage')
+    next_stage_parser = subparsers.add_parser('next-stage', help='Move to next development stage')
+    next_stage_parser.add_argument('--no-commit', action='store_true',
+                                 help='Do not include git commit hash in build metadata')
 
     # validate command
     validate_parser = subparsers.add_parser('validate', help='Validate version string')
@@ -217,6 +263,8 @@ Examples:
     # set command
     set_parser = subparsers.add_parser('set', help='Set specific version')
     set_parser.add_argument('version', help='Version string to set')
+    set_parser.add_argument('--no-commit', action='store_true',
+                           help='Do not include git commit hash in build metadata')
 
     # info command
     info_parser = subparsers.add_parser('info', help='Show version information')
@@ -232,16 +280,19 @@ Examples:
         manager = VersionManager()
 
         if args.command == 'bump':
-            manager.bump_version(args.type)
+            include_commit = not getattr(args, 'no_commit', False)
+            manager.bump_version(args.type, include_commit)
         elif args.command == 'next-stage':
-            manager.next_stage()
+            include_commit = not getattr(args, 'no_commit', False)
+            manager.next_stage(include_commit)
         elif args.command == 'validate':
             success = manager.validate_version(args.version)
             sys.exit(0 if success else 1)
         elif args.command == 'current':
             manager.show_current()
         elif args.command == 'set':
-            manager.set_version(args.version)
+            include_commit = not getattr(args, 'no_commit', False)
+            manager.set_version(args.version, include_commit)
             print(f"Set version to: {args.version}")
         elif args.command == 'info':
             manager.show_info(args.version)

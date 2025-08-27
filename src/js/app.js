@@ -197,6 +197,30 @@ module.exports = new Vue({
       } catch (e) {
         return 'Unknown'
       }
+    },
+
+
+    versionCommitInfo() {
+      try {
+        const version = new Version(this.config.version)
+        if (version.build && version.build.startsWith('build.')) {
+          const commit = version.build.replace('build.', '')
+          return commit
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+      return null
+    },
+
+
+    versionDisplay() {
+      const baseVersion = this.config.version
+      const commit = this.versionCommitInfo
+      if (commit) {
+        return `${baseVersion} (${commit})`
+      }
+      return baseVersion
     }
   },
 
