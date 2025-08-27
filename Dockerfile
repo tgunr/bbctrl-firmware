@@ -52,7 +52,12 @@ RUN apt-get update \
         libxft-dev \
         libxinerama-dev \
         libxcursor-dev \
+        libnode-dev \
         libv8-dev \
+        qtbase5-dev \
+        qtchooser \
+        qt5-qmake \
+        qtbase5-dev-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/cache/apt/archives/*
