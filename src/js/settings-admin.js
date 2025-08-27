@@ -42,7 +42,57 @@ module.exports = {
 
 
   computed: {
-    authorized() {return this.$root.authorized}
+    authorized() {return this.$root.authorized},
+
+    currentVersionStage() {
+      try {
+        const version = new Version(this.config.version)
+        return version.getStage().toLowerCase().replace(/\s+/g, '-')
+      } catch (e) {
+        return 'unknown'
+      }
+    },
+
+    currentVersionStageDisplay() {
+      try {
+        const version = new Version(this.config.version)
+        return this.$root.versionStageDisplay
+      } catch (e) {
+        return 'Unknown'
+      }
+    },
+
+    latestVersionStage() {
+      try {
+        const version = new Version(this.$root.latestVersion)
+        return version.getStage().toLowerCase().replace(/\s+/g, '-')
+      } catch (e) {
+        return 'unknown'
+      }
+    },
+
+    latestVersionStageDisplay() {
+      try {
+        const version = new Version(this.$root.latestVersion)
+        const stage = version.getStage()
+
+        if (version.isPrerelease()) {
+          if (version.isDevelopment()) {
+            return 'Development'
+          } else if (version.isAlpha()) {
+            return 'Alpha'
+          } else if (version.isBeta()) {
+            return 'Beta'
+          } else if (version.isReleaseCandidate()) {
+            return 'Release Candidate'
+          }
+        }
+
+        return stage.charAt(0).toUpperCase() + stage.slice(1)
+      } catch (e) {
+        return 'Unknown'
+      }
+    }
   },
 
 

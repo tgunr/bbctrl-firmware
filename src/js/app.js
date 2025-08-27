@@ -163,6 +163,40 @@ module.exports = new Vue({
     show_upgrade() {
       if (!this.latestVersion) return false
       return util.compare_versions(this.config.version, this.latestVersion) < 0
+    },
+
+
+    versionStage() {
+      try {
+        const version = new Version(this.config.version)
+        return version.getStage().toLowerCase().replace(/\s+/g, '-')
+      } catch (e) {
+        return 'unknown'
+      }
+    },
+
+
+    versionStageDisplay() {
+      try {
+        const version = new Version(this.config.version)
+        const stage = version.getStage()
+
+        if (version.isPrerelease()) {
+          if (version.isDevelopment()) {
+            return 'Development'
+          } else if (version.isAlpha()) {
+            return 'Alpha'
+          } else if (version.isBeta()) {
+            return 'Beta'
+          } else if (version.isReleaseCandidate()) {
+            return 'Release Candidate'
+          }
+        }
+
+        return stage.charAt(0).toUpperCase() + stage.slice(1)
+      } catch (e) {
+        return 'Unknown'
+      }
     }
   },
 

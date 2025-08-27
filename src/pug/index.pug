@@ -85,6 +85,8 @@ html(lang="en")
               .subtitle
                 | CNC Controller #[b {{state.demo ? 'Demo ' : ''}}]
                 | v{{config.version}}
+                span.version-stage(:class="'stage-' + versionStage")
+                  | ({{versionStageDisplay}})
                 a.upgrade-version(v-if="show_upgrade", href="#settings:admin")
                   | Upgrade to v{{latestVersion}}
                 .fa.fa-check(v-if="!show_upgrade && latestVersion",
@@ -152,6 +154,7 @@ html(lang="en")
     script: include ../static/js/chart-2.9.3.min.js
     script: include ../static/js/chart.bundle-2.9.3.min.js
     script: include:browserify ../js/main.js
+    script: include:browserify ../js/version.js
     script: include ../static/js/codemirror.js
     script: include ../static/js/codemirror-javascript.js
     script: include ../static/js/jscolor.min.js

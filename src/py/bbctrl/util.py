@@ -29,13 +29,14 @@ from datetime import datetime
 import pkg_resources
 from pkg_resources import Requirement, resource_filename
 import socket
+from .version import Version, parse_version as semver_parse, compare_versions
 
 
 _version = pkg_resources.require('bbctrl')[0].version
 
 try:
-  with open('/sys/firmware/devicetree/base/model', 'r') as f:
-    _model = f.read().strip('\0')
+    with open('/sys/firmware/devicetree/base/model', 'r') as f:
+        _model = f.read().strip('\0')
 except: _model = 'unknown'
 
 
@@ -44,13 +45,39 @@ def id16_less(a, b): return (1 << 15) < (a - b) & ((1 << 16) - 1)
 
 
 def get_resource(path):
-  return resource_filename(Requirement.parse('bbctrl'), 'bbctrl/' + path)
+    return resource_filename(Requirement.parse('bbctrl'), 'bbctrl/' + path)
 
 
 def get_version(): return _version
 def get_model(): return _model
-def parse_version(s): return tuple([int(x) for x in s.split('.')])
-def version_less(a, b): return parse_version(a) < parse_version(b)
+
+# Legacy version parsing for backward compatibility
+def parse_version(s):
+    """
+    Parse version string. Supports both legacy tuple format and new SemVer format.
+
+    For backward compatibility, returns tuple for simple versions,
+    but uses Version object for SemVer format.
+    """
+    try:
+        # Try to parse as SemVer first
+        return semver_parse(s)
+    except ValueError:
+        # Fall back to legacy tuple parsing
+        return tuple([int(x) for x in s.split('.')])
+
+def version_less(a, b):
+    """
+    Compare two version strings.
+
+    Supports both legacy tuple comparison and new SemVer comparison.
+    """
+    try:
+        # Try SemVer comparison first
+        return compare_versions(a, b) < 0
+    except ValueError:
+        # Fall back to legacy comparison
+        return parse_version(a) < parse_version(b)
 def timestamp(): return datetime.now().strftime('%Y%m%d-%H%M%S')
 
 

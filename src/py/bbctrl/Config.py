@@ -34,6 +34,7 @@ import re
 import datetime
 
 from . import util
+from .version import Version
 
 __all__ = ['Config']
 
@@ -164,88 +165,182 @@ class Config(object):
 
 
     def upgrade(self, config):
-        version = util.parse_version(config['version'])
+        try:
+            # Try SemVer comparison first
+            current_version = Version(self.version)
+            config_version = Version(config['version'])
 
-        if version < util.parse_version(self.version):
-            self.log.info('Upgrading config from %s to %s' %
-                          (version, self.version))
+            if config_version < current_version:
+                self.log.info('Upgrading config from %s to %s' %
+                              (config_version, current_version))
+        except ValueError:
+            # Fall back to legacy comparison
+            version = util.parse_version(config['version'])
 
-        if version < (0, 2, 4):
-            for motor in config['motors']:
-                for key in 'max-jerk max-velocity'.split():
-                    if key in motor: motor[key] /= 1000
+            if version < util.parse_version(self.version):
+                self.log.info('Upgrading config from %s to %s' %
+                              (version, self.version))
 
-        if version < (0, 3, 4):
-            for motor in config['motors']:
-                for key in 'max-accel latch-velocity search-velocity'.split():
-                    if key in motor: motor[key] /= 1000
+        try:
+            # Try SemVer comparison for upgrade conditions
+            config_version = Version(config['version'])
 
-        if version < (0, 3, 23):
-            if 'tool' in config:
-                if 'spindle-type' in config['tool']:
-                    type = config['tool']['spindle-type']
-                    if type == 'PWM': type = 'PWM Spindle'
-                    if type == 'Huanyang': type = 'Huanyang VFD'
-                    config['tool']['tool-type'] = type
-                    del config['tool']['spindle-type']
+            if config_version < Version('0.2.4'):
+                for motor in config['motors']:
+                    for key in 'max-jerk max-velocity'.split():
+                        if key in motor: motor[key] /= 1000
 
-                if 'spin-reversed' in config['tool']:
-                    reversed = config['tool']['spin-reversed']
-                    config['tool']['tool-reversed'] = reversed
-                    del config['tool']['spin-reversed']
+            if config_version < Version('0.3.4'):
+                for motor in config['motors']:
+                    for key in 'max-accel latch-velocity search-velocity'.split():
+                        if key in motor: motor[key] /= 1000
 
-        if version < (0, 4, 7):
-            for motor in config['motors']:
-                if 2 < motor.get('idle-current', 0): motor['idle-current'] = 2
-                if 'enabled' not in motor:
-                    motor['enabled'] = motor.get('power-mode', '') != 'disabled'
+            if config_version < Version('0.3.23'):
+                if 'tool' in config:
+                    if 'spindle-type' in config['tool']:
+                        type = config['tool']['spindle-type']
+                        if type == 'PWM': type = 'PWM Spindle'
+                        if type == 'Huanyang': type = 'Huanyang VFD'
+                        config['tool']['tool-type'] = type
+                        del config['tool']['spindle-type']
 
-        if version < (1, 0, 2):
-            io_map           = self.template['io-map']
-            io_defaults      = io_map['default']
-            config['io-map'] = io = copy.deepcopy(io_defaults)
+                    if 'spin-reversed' in config['tool']:
+                        reversed = config['tool']['spin-reversed']
+                        config['tool']['tool-reversed'] = reversed
+                        del config['tool']['spin-reversed']
 
-            def find_io_index(function):
-                for i in range(len(io_defaults)):
-                    if io_defaults[i]['function'] == function:
-                        return i
+            if config_version < Version('0.4.7'):
+                for motor in config['motors']:
+                    if 2 < motor.get('idle-current', 0): motor['idle-current'] = 2
+                    if 'enabled' not in motor:
+                        motor['enabled'] = motor.get('power-mode', '') != 'disabled'
 
-                raise Exception('IO default "%s" not found' % function)
+            if config_version < Version('1.0.2'):
+                io_map           = self.template['io-map']
+                io_defaults      = io_map['default']
+                config['io-map'] = io = copy.deepcopy(io_defaults)
 
-            def upgrade_io(config, old, new):
-                if not old in config: return
-                mode  = config.get(old)
-                index = find_io_index(new)
+                def find_io_index(function):
+                    for i in range(len(io_defaults)):
+                        if io_defaults[i]['function'] == function:
+                            return i
 
-                if mode == 'disabled':
-                    io[index]['function'] = 'disabled'
-                    io[index]['mode']     = io_defaults[index]['mode']
-                else:
-                    io[index]['function'] = new
-                    io[index]['mode']     = mode
+                    raise Exception('IO default "%s" not found' % function)
 
-                del config[old]
+                def upgrade_io(config, old, new):
+                    if not old in config: return
+                    mode  = config.get(old)
+                    index = find_io_index(new)
 
-            # Motor switches
-            for i in range(len(config['motors'])):
-                motor = config['motors'][i]
+                    if mode == 'disabled':
+                        io[index]['function'] = 'disabled'
+                        io[index]['mode']     = io_defaults[index]['mode']
+                    else:
+                        io[index]['function'] = new
+                        io[index]['mode']     = mode
 
-                for side in ('min', 'max'):
-                    name = 'input-motor-%d-%s' % (i, side)
-                    upgrade_io(motor, side + '-switch', name)
+                    del config[old]
 
-            # Inputs
-            for name in ('estop', 'probe'):
-                upgrade_io(config['switches'], name, 'input-' + name)
+                # Motor switches
+                for i in range(len(config['motors'])):
+                    motor = config['motors'][i]
 
-            # Outputs
-            for old, new in (('fault', 'fault'), ('load-1', 'mist'),
-                             ('load-2', 'flood')):
-                upgrade_io(config['outputs'], old, 'output-' + new)
+                    for side in ('min', 'max'):
+                        name = 'input-motor-%d-%s' % (i, side)
+                        upgrade_io(motor, side + '-switch', name)
 
-            # Tool outputs
-            for name in ('tool-direction', 'tool-enable'):
-                upgrade_io(config['tool'], name + '-mode', 'output-' + name)
+                # Inputs
+                for name in ('estop', 'probe'):
+                    upgrade_io(config['switches'], name, 'input-' + name)
+
+                # Outputs
+                for old, new in (('fault', 'fault'), ('load-1', 'mist'),
+                                 ('load-2', 'flood')):
+                    upgrade_io(config['outputs'], old, 'output-' + new)
+
+                # Tool outputs
+                for name in ('tool-direction', 'tool-enable'):
+                    upgrade_io(config['tool'], name + '-mode', 'output-' + name)
+        except ValueError:
+            # Fall back to legacy tuple comparison
+            version = util.parse_version(config['version'])
+
+            if version < (0, 2, 4):
+                for motor in config['motors']:
+                    for key in 'max-jerk max-velocity'.split():
+                        if key in motor: motor[key] /= 1000
+
+            if version < (0, 3, 4):
+                for motor in config['motors']:
+                    for key in 'max-accel latch-velocity search-velocity'.split():
+                        if key in motor: motor[key] /= 1000
+
+            if version < (0, 3, 23):
+                if 'tool' in config:
+                    if 'spindle-type' in config['tool']:
+                        type = config['tool']['spindle-type']
+                        if type == 'PWM': type = 'PWM Spindle'
+                        if type == 'Huanyang': type = 'Huanyang VFD'
+                        config['tool']['tool-type'] = type
+                        del config['tool']['spindle-type']
+
+                    if 'spin-reversed' in config['tool']:
+                        reversed = config['tool']['spin-reversed']
+                        config['tool']['tool-reversed'] = reversed
+                        del config['tool']['spin-reversed']
+
+            if version < (0, 4, 7):
+                for motor in config['motors']:
+                    if 2 < motor.get('idle-current', 0): motor['idle-current'] = 2
+                    if 'enabled' not in motor:
+                        motor['enabled'] = motor.get('power-mode', '') != 'disabled'
+
+            if version < (1, 0, 2):
+                io_map           = self.template['io-map']
+                io_defaults      = io_map['default']
+                config['io-map'] = io = copy.deepcopy(io_defaults)
+
+                def find_io_index(function):
+                    for i in range(len(io_defaults)):
+                        if io_defaults[i]['function'] == function:
+                            return i
+
+                    raise Exception('IO default "%s" not found' % function)
+
+                def upgrade_io(config, old, new):
+                    if not old in config: return
+                    mode  = config.get(old)
+                    index = find_io_index(new)
+
+                    if mode == 'disabled':
+                        io[index]['function'] = 'disabled'
+                        io[index]['mode']     = io_defaults[index]['mode']
+                    else:
+                        io[index]['function'] = new
+                        io[index]['mode']     = mode
+
+                    del config[old]
+
+                # Motor switches
+                for i in range(len(config['motors'])):
+                    motor = config['motors'][i]
+
+                    for side in ('min', 'max'):
+                        name = 'input-motor-%d-%s' % (i, side)
+                        upgrade_io(motor, side + '-switch', name)
+
+                # Inputs
+                for name in ('estop', 'probe'):
+                    upgrade_io(config['switches'], name, 'input-' + name)
+
+                # Outputs
+                for old, new in (('fault', 'fault'), ('load-1', 'mist'),
+                                 ('load-2', 'flood')):
+                    upgrade_io(config['outputs'], old, 'output-' + new)
+
+                # Tool outputs
+                for name in ('tool-direction', 'tool-enable'):
+                    upgrade_io(config['tool'], name + '-mode', 'output-' + name)
 
         config['version'] = self.version
 
