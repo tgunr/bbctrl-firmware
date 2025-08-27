@@ -28,6 +28,9 @@ setup(
   package_dir = {'': 'src/py'},
   packages = ['bbctrl', 'inevent', 'lcd', 'udevevent'],
   include_package_data = True,
+  data_files = [
+    ('', ['.dev-version']),
+  ],
   entry_points = {
     'console_scripts': [
       'bbctrl = bbctrl:run'
