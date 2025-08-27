@@ -58,8 +58,9 @@ def get_version():
                 dev_num = f.read().strip()
             if dev_num.isdigit():
                 # Get base version from package metadata and add dev suffix
+                # Use SemVer format: MAJOR.MINOR.PATCH-dev.NUMBER
                 base_version = _version
-                return f"{base_version}.dev{dev_num}"
+                return f"{base_version}-dev.{dev_num}"
     except:
         pass
 
