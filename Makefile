@@ -18,7 +18,9 @@ RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
 # Simple dev version incrementer
-BASE_VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
+PACKAGE_VERSION := $(shell cat package.json | grep '"version"' | cut -d'"' -f4)
+# Extract base version (remove any -dev.X suffix)
+BASE_VERSION := $(shell echo $(PACKAGE_VERSION) | cut -d'-' -f1)
 DEV_VERSION := $(shell ./scripts/manage-dev-version increment)
 VERSION := $(BASE_VERSION).dev$(DEV_VERSION)
 $(info Using dev version: $(VERSION))
