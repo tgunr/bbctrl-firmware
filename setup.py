@@ -6,18 +6,14 @@ import os
 
 pkg = json.load(open('package.json', 'r'))
 
-# Check for build info and enhance version
-version = pkg['version']
-if os.path.exists('.build-info.json'):
-    try:
-        with open('.build-info.json', 'r') as f:
-            build_info = json.load(f)
-            commit = build_info.get('commit', '')
-            if commit:
-                version = f"{version}+build.{commit}"
-                print(f"Using build info in version: {version}")
-    except (json.JSONDecodeError, KeyError) as e:
-        print(f"Warning: Could not read build info: {e}")
+# Check for environment variable first (set by Makefile)
+version = os.environ.get('BBCTRL_VERSION')
+if version:
+    print(f"Using Makefile version: {version}")
+else:
+    # Fall back to package.json version
+    version = pkg['version']
+    print(f"Using package.json version: {version}")
 
 setup(
   name = pkg['name'],

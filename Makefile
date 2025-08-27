@@ -71,7 +71,7 @@ bbemu:
 	$(MAKE) -C src/avr/emu
 
 pkg: all $(SUBPROJECTS) arm-bin
-	./setup.py sdist
+	BBCTRL_VERSION=$(VERSION) ./setup.py sdist
 
 beta-pkg: pkg
 	cp dist/$(PKG_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
