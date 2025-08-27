@@ -63,8 +63,31 @@ def parse_version(s):
         # Try to parse as SemVer first
         return semver_parse(s)
     except ValueError:
-        # Fall back to legacy tuple parsing
-        return tuple([int(x) for x in s.split('.')])
+        try:
+            # Handle PEP 440 format that might have been converted from SemVer
+            # e.g., "2.1.0.dev2" -> convert to "2.1.0-dev.2" for SemVer parsing
+            if '.dev' in s or '.alpha' in s or '.beta' in s or '.rc' in s:
+                # Convert PEP 440 prerelease format to SemVer format
+                parts = s.split('.')
+                if len(parts) >= 4:
+                    # Find the prerelease part
+                    for i, part in enumerate(parts):
+                        if part in ['dev', 'alpha', 'beta', 'rc']:
+                            if i + 1 < len(parts):
+                                # Convert "2.1.0.dev2" to "2.1.0-dev.2"
+                                semver_parts = parts[:3] + [parts[i] + '.' + parts[i + 1]]
+                                semver_str = '-'.join(semver_parts[:3]) + '-' + semver_parts[3]
+                                try:
+                                    return semver_parse(semver_str)
+                                except ValueError:
+                                    pass
+                            break
+
+            # Fall back to legacy tuple parsing
+            return tuple([int(x) for x in s.split('.')])
+        except (ValueError, IndexError):
+            # If all parsing fails, fall back to legacy tuple parsing
+            return tuple([int(x) for x in s.split('.')])
 
 def version_less(a, b):
     """
