@@ -75,19 +75,41 @@ def parse_version(s):
                         if part in ['dev', 'alpha', 'beta', 'rc']:
                             if i + 1 < len(parts):
                                 # Convert "2.1.0.dev2" to "2.1.0-dev.2"
-                                semver_parts = parts[:3] + [parts[i] + '.' + parts[i + 1]]
-                                semver_str = '-'.join(semver_parts[:3]) + '-' + semver_parts[3]
+                                prerelease_type = parts[i]  # 'dev', 'alpha', 'beta', 'rc'
+                                prerelease_num = parts[i + 1]  # '2'
+                                # Build SemVer string: "2.1.0-dev.2"
+                                semver_str = '.'.join(parts[:3]) + '-' + prerelease_type + '.' + prerelease_num
                                 try:
                                     return semver_parse(semver_str)
                                 except ValueError:
                                     pass
                             break
 
-            # Fall back to legacy tuple parsing
-            return tuple([int(x) for x in s.split('.')])
+            # Fall back to legacy tuple parsing - only for clean numeric versions
+            # Filter out any non-numeric parts to avoid ValueError
+            numeric_parts = []
+            for part in s.split('.'):
+                try:
+                    numeric_parts.append(int(part))
+                except ValueError:
+                    # Stop at first non-numeric part (like 'dev2')
+                    break
+            if numeric_parts:
+                return tuple(numeric_parts)
+            else:
+                raise ValueError(f"Unable to parse version: {s}")
         except (ValueError, IndexError):
-            # If all parsing fails, fall back to legacy tuple parsing
-            return tuple([int(x) for x in s.split('.')])
+            # If all parsing fails, try one more time with numeric-only parts
+            numeric_parts = []
+            for part in s.split('.'):
+                try:
+                    numeric_parts.append(int(part))
+                except ValueError:
+                    break
+            if numeric_parts:
+                return tuple(numeric_parts)
+            else:
+                raise ValueError(f"Unable to parse version: {s}")
 
 def version_less(a, b):
     """
