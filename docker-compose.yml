@@ -1,10 +1,11 @@
 # Define common environment variables
 x-common-env: &common-env
-  CAMOTICS_HOME: ${CAMOTICS_HOME:-/opt/camotics}
-  CBANG_HOME: ${CBANG_HOME:-/opt/cbang}
-  UPDIPROG_HOME: ${UPDIPROG_HOME:-/opt/updiprog}
-  RPIPDI_HOME: ${RPIPDI_HOME:-/opt/rpipdi}
-  BBKBD_HOME: ${BBKBD_HOME:-/opt/bbkbd}
+  CAMOTICS_HOME: ${CAMOTICS_HOME:-/build/camotics}
+  CBANG_HOME: ${CBANG_HOME:-/build/cbang}
+  UPDIPROG_HOME: ${UPDIPROG_HOME:-/build/updiprog}
+  RPIPDI_HOME: ${RPIPDI_HOME:-/build/rpipdi}
+  BBKBD_HOME: ${BBKBD_HOME:-/build/bbkbd}
+  V8_HOME: ${V8_HOME:-/usr/include/node}
   PYTHONUNBUFFERED: 1
   PYTHONDONTWRITEBYTECODE: 1
 
@@ -13,7 +14,6 @@ x-common-volumes:
   common: &common-volumes
     - .:/build
     - ./build:/build/build
-    - node-modules:/build/node_modules
     - ./dist:/build/dist
 
 services:
@@ -24,10 +24,10 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
+        - USER_ID=${USER_UID:-501}
+        - GROUP_ID=${USER_GID:-20}
     volumes: *common-volumes
     environment: *common-env
-    # Run container as current host user to avoid permission issues when mounting the repo
-    user: "${UID:-1000}:${GID:-1000}"
     # Set resource limits
     deploy:
       resources:
@@ -53,14 +53,13 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - NODE_ENV=development
+        - USER_ID=${USER_UID:-501}
+        - GROUP_ID=${USER_GID:-20}
     volumes:
       - .:/build
       - ./build:/build/build
-      - node-modules:/build/node_modules
       - ./dist:/build/dist
       - venv:/venv
-    # Run as current user to avoid permission issues
-    user: "${UID:-1000}:${GID:-1000}"
     environment:
       <<: *common-env
       NODE_ENV: development
@@ -96,9 +95,6 @@ services:
 
 # Define named volumes for better persistence
 volumes:
-  node-modules:
-    name: bbctrl-node-modules
-    driver: local
   venv:
     name: bbctrl-venv
     driver: local

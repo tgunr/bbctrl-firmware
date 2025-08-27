@@ -571,13 +571,13 @@ class Web(tornado.web.Application):
         tornado.web.Application.__init__(self, router.urls + handlers)
 
         try:
-            self.listen(8080, address = args.addr)
+            self.listen(args.port, address = args.addr)
 
         except Exception as e:
             raise Exception('Failed to bind %s:%d: %s' % (
-                args.addr, 8080, e))
+                args.addr, args.port, e))
 
-        print('Listening on http://%s:%d/' % (args.addr, 8080))
+        print('Listening on http://%s:%d/' % (args.addr, args.port))
 
 
     def _get_log(self, path):

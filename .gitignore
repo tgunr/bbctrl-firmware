@@ -45,3 +45,5 @@ Tools/gcode_debugger/MSG_DEBUG_FIX_SUMMARY.md
 Tools/gcode_debugger/.mcphost.yml
 external_macros/
 test*.py
+docker/Dockerfile.backup
+.kilocode/mcp.json

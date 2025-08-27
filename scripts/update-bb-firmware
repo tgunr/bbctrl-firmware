@@ -19,8 +19,10 @@ printf "Checking Firmwares\n"
 # Main firmware
 if [ -e "$AVRFW" ]; then
   printf "\n*** Main Firmware ***\n"
-  $RPIPDI -c 27 -d 23 -f 0=0xff -f 1=0x00 -f 2=0xbe -f 4=0xff -f 5=0xeb \
-          -x -w $AVRFW
+  if ! $RPIPDI -c 27 -d 23 -f 0=0xff -f 1=0x00 -f 2=0xbe -f 4=0xff -f 5=0xeb \
+          -x -w $AVRFW; then
+    printf "Warning: AVR firmware update failed, continuing...\n"
+  fi
 fi
 
 # Reset AVR
