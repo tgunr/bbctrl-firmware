@@ -103,7 +103,7 @@ bin/camotics.so:
 	-cd cbang && scons -j$(CPUS) v8_compress_pointers=0 && cd .. && \
 	echo "Building camotics.so..." && \
 	export CBANG_HOME=$$PWD/cbang && \
-	cd camotics && scons -j$(CPUS) build/camotics.so with_gui=0 wrap_glibc=0 && cd .. && \
+	cd camotics && scons -j$(CPUS) build/camotics.so with_gui=0 wrap_glibc=0 with_tpl=0 && cd .. && \
 	cp camotics/build/camotics.so bin/ || echo "Warning: camotics build failed, skipping"
 
 camotics: bin/camotics.so
