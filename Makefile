@@ -17,7 +17,14 @@ RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\#* \*~ .\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
-VERSION  := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
+# Simple dev version reader
+PACKAGE_VERSION := $(shell cat package.json | grep '"version"' | cut -d'"' -f4)
+# Extract base version (remove any -dev.X suffix)
+BASE_VERSION := $(shell echo $(PACKAGE_VERSION) | cut -d'-' -f1)
+DEV_VERSION := $(shell ./scripts/manage-dev-version get)
+VERSION := $(BASE_VERSION).dev$(DEV_VERSION)
+$(info Using dev version: $(VERSION))
+
 PKG_NAME := bbctrl-$(VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
 BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
@@ -64,7 +71,7 @@ bbemu:
 	$(MAKE) -C src/avr/emu
 
 pkg: all $(SUBPROJECTS) arm-bin
-	./setup.py sdist
+	BBCTRL_VERSION=$(VERSION) ./setup.py sdist
 
 beta-pkg: pkg
 	cp dist/$(PKG_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2

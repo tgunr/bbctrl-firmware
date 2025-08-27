@@ -127,17 +127,23 @@ module.exports = {
 
 
   compare_versions(a, b) {
-    let reStripTrailingZeros = /(\.0+)+$/
-    let segsA = a.trim().replace(reStripTrailingZeros, '').split('.')
-    let segsB = b.trim().replace(reStripTrailingZeros, '').split('.')
-    let l = Math.min(segsA.length, segsB.length)
+    try {
+      // Try SemVer comparison first
+      return compareVersions(a, b)
+    } catch (e) {
+      // Fall back to legacy comparison
+      let reStripTrailingZeros = /(\.0+)+$/
+      let segsA = a.trim().replace(reStripTrailingZeros, '').split('.')
+      let segsB = b.trim().replace(reStripTrailingZeros, '').split('.')
+      let l = Math.min(segsA.length, segsB.length)
 
-    for (let i = 0; i < l; i++) {
-      let diff = parseInt(segsA[i], 10) - parseInt(segsB[i], 10)
-      if (diff) return diff
+      for (let i = 0; i < l; i++) {
+        let diff = parseInt(segsA[i], 10) - parseInt(segsB[i], 10)
+        if (diff) return diff
+      }
+
+      return segsA.length - segsB.length
     }
-
-    return segsA.length - segsB.length
   },
 
 

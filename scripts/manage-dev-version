@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Simple dev version incrementer
+# Usage: ./scripts/manage-dev-version [increment|get]
+
+VERSION_FILE=".dev-version"
+
+# Create version file if it doesn't exist
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "1" > "$VERSION_FILE"
+fi
+
+case "$1" in
+    "increment")
+        # Read current version
+        CURRENT=$(cat "$VERSION_FILE")
+        # Increment and save
+        NEXT=$((CURRENT + 1))
+        echo "$NEXT" > "$VERSION_FILE"
+        echo "$NEXT"
+        ;;
+    "get")
+        cat "$VERSION_FILE"
+        ;;
+    *)
+        echo "Usage: $0 [increment|get]"
+        exit 1
+        ;;
+esac

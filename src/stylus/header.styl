@@ -66,6 +66,80 @@
       font-weight 100
       color #aaa
 
+      .version-stage
+        margin-left 0.5em
+        padding 2px 8px
+        border-radius 12px
+        font-size 12pt
+        font-weight 500
+        text-transform uppercase
+        letter-spacing 0.5px
+
+        &.stage-development
+          background-color #ff6b6b
+          color white
+
+        &.stage-alpha
+          background-color #ffd93d
+          color #333
+
+        &.stage-beta
+          background-color #6bcf7f
+          color white
+
+        &.stage-release-candidate
+          background-color #4ecdc4
+          color white
+
+        &.stage-final
+          background-color #95a5a6
+          color white
+
+        &.stage-unknown
+          background-color #bdc3c7
+          color white
+
+      .version-info
+        margin-top 1em
+        padding 1em
+        background-color #f8f9fa
+        border-radius 8px
+        border-left 4px solid #007cba
+
+        .stage-indicator
+          display inline-block
+          margin-top 0.5em
+          padding 4px 12px
+          border-radius 15px
+          font-size 14pt
+          font-weight 600
+          text-transform uppercase
+          letter-spacing 0.5px
+
+          &.stage-development
+            background-color #ff6b6b
+            color white
+
+          &.stage-alpha
+            background-color #ffd93d
+            color #333
+
+          &.stage-beta
+            background-color #6bcf7f
+            color white
+
+          &.stage-release-candidate
+            background-color #4ecdc4
+            color white
+
+          &.stage-final
+            background-color #95a5a6
+            color white
+
+          &.stage-unknown
+            background-color #bdc3c7
+            color white
+
       .copyright
         font-size 10pt
 

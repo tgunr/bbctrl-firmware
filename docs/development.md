@@ -37,11 +37,40 @@ The first time this is run it will take quite awhile as it setups up the build
 environment.  You can run the above command again later to build the latest
 version.
 
+## Version Management
+
+The Buildbotics CNC Controller uses semantic versioning with pre-release support. See [SEMANTIC_VERSIONING.md](SEMANTIC_VERSIONING.md) for detailed information.
+
+### Version Management Tools
+
+Use the version manager script for version operations:
+
+    # Show current version
+    python scripts/version-manager.py current
+
+    # Bump version components
+    python scripts/version-manager.py bump minor     # 2.2.0 → 2.3.0
+    python scripts/version-manager.py bump patch     # 2.2.0 → 2.2.1
+
+    # Move through development stages
+    python scripts/version-manager.py next-stage     # dev → alpha → beta → rc → final
+
+    # Validate version format
+    python scripts/version-manager.py validate "2.2.0-dev.1"
+
+### Development Workflow
+
+1. **Development**: Use `dev.X` versions during active development
+2. **Alpha**: Move to `alpha.1` when feature-complete
+3. **Beta**: Move to `beta.1` for public testing
+4. **Release Candidate**: Move to `rc.1` for final validation
+5. **Final Release**: Remove prerelease identifier for production
+
 ## Build the Firmware Package
 
     make pkg
 
-The resulting package will be a ``.tar.bz2`` file in ``dist``.
+The resulting package will be a ``.tar.bz2`` file in ``dist`` with the current version number.
 
 ## Upload the Firmware Package to a Buildbotics CNC Controller
 If you have a Buildbotics CNC controller at ``bbctrl.local``, the default

@@ -80,6 +80,13 @@ script#settings-admin-template(type="text/x-template")
         p
           | Are you sure you want to upgrade the firmware to version
           | {{latestVersion}}?
+        p(v-if="latestVersionStage !== 'final'")
+          strong Current Stage: {{currentVersionStageDisplay}}
+          br
+          strong Target Stage: {{latestVersionStageDisplay}}
+        .version-info(v-if="latestVersionStage !== 'final'")
+          .stage-indicator(:class="'stage-' + latestVersionStage")
+            | {{latestVersionStageDisplay}}
 
     dialog.upgrading(v-ref:upgrading, :click-away="false", :buttons="[]",
       header="Firmware upgrading")
