@@ -84,7 +84,12 @@ class Config(object):
             current = util.parse_version(self.version)
             versions = list(filter(lambda v: v < current, versions))
             if len(versions):
-                return root + '/config-v%d.%d.%d.json' % max(versions)
+                max_version = max(versions)
+                # Handle both Version objects and tuples for backward compatibility
+                if hasattr(max_version, 'major'):
+                    return root + '/config-v%d.%d.%d.json' % (max_version.major, max_version.minor, max_version.patch)
+                else:
+                    return root + '/config-v%d.%d.%d.json' % max_version
 
         except: self.log.exception()
 
