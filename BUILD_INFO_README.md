@@ -41,9 +41,8 @@ The build system automatically reads the `.build-info.json` file and incorporate
 BUILD_INFO_EXISTS := $(shell test -f .build-info.json && echo "yes" || echo "no")
 ifeq ($(BUILD_INFO_EXISTS),yes)
   BUILD_COMMIT := $(shell cat .build-info.json | grep -o '"commit": "[^"]*' | cut -d'"' -f4)
-  BUILD_TIME := $(shell cat .build-info.json | grep -o '"build_time": "[^"]*' | cut -d'"' -f4)
   BASE_VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
-  VERSION := $(BASE_VERSION)+build.$(BUILD_COMMIT).$(BUILD_TIME)
+  VERSION := $(BASE_VERSION)+build.$(BUILD_COMMIT)
 endif
 ```
 
@@ -56,9 +55,8 @@ if os.path.exists('.build-info.json'):
         with open('.build-info.json', 'r') as f:
             build_info = json.load(f)
             commit = build_info.get('commit', '')
-            build_time = build_info.get('build_time', '')
-            if commit and build_time:
-                version = f"{version}+build.{commit}.{build_time}"
+            if commit:
+                version = f"{version}+build.{commit}"
     except (json.JSONDecodeError, KeyError) as e:
         print(f"Warning: Could not read build info: {e}")
 ```
@@ -67,9 +65,8 @@ if os.path.exists('.build-info.json'):
 
 Builds now include build metadata in the version string:
 ```
-2.1.0-dev.2+build.4007368f.20250827-171439
-         │     │         │
-         │     │         └── Build timestamp
+2.1.0-dev.2+build.4007368f
+         │     │
          │     └──────────── Commit hash (short)
          └────────────────── Base version from package.json
 ```
@@ -93,11 +90,11 @@ Commit: a1b2c3d4
 Build Time: 2025-08-27T17:14:39Z
 
 $ ./scripts/docker-build
-Using build info: 2.1.0-dev.2+build.a1b2c3d4.20250827-171439
+Using build info: 2.1.0-dev.2+build.a1b2c3d4
 [... build output ...]
 
 $ ls dist/
-bbctrl-2.1.0-dev.2+build.a1b2c3d4.20250827-171439.tar.bz2
+bbctrl-2.1.0-dev.2+build.a1b2c3d4.tar.bz2
 ```
 
 ## Comparison with Other Systems

@@ -21,9 +21,8 @@ RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 BUILD_INFO_EXISTS := $(shell test -f .build-info.json && echo "yes" || echo "no")
 ifeq ($(BUILD_INFO_EXISTS),yes)
   BUILD_COMMIT := $(shell cat .build-info.json | grep -o '"commit": "[^"]*' | cut -d'"' -f4)
-  BUILD_TIME := $(shell cat .build-info.json | grep -o '"build_time": "[^"]*' | cut -d'"' -f4)
   BASE_VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)
-  VERSION := $(BASE_VERSION)+build.$(BUILD_COMMIT).$(BUILD_TIME)
+  VERSION := $(BASE_VERSION)+build.$(BUILD_COMMIT)
   $(info Using build info: $(VERSION))
 else
   VERSION := $(shell sed -n 's/^.*"version": "\([^\"]*\)",.*$$/\1/p' package.json)

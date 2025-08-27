@@ -13,9 +13,8 @@ if os.path.exists('.build-info.json'):
         with open('.build-info.json', 'r') as f:
             build_info = json.load(f)
             commit = build_info.get('commit', '')
-            build_time = build_info.get('build_time', '')
-            if commit and build_time:
-                version = f"{version}+build.{commit}.{build_time}"
+            if commit:
+                version = f"{version}+build.{commit}"
                 print(f"Using build info in version: {version}")
     except (json.JSONDecodeError, KeyError) as e:
         print(f"Warning: Could not read build info: {e}")
