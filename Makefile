@@ -17,11 +17,11 @@ RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\#* \*~ .\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
-# Simple dev version incrementer
+# Simple dev version reader
 PACKAGE_VERSION := $(shell cat package.json | grep '"version"' | cut -d'"' -f4)
 # Extract base version (remove any -dev.X suffix)
 BASE_VERSION := $(shell echo $(PACKAGE_VERSION) | cut -d'-' -f1)
-DEV_VERSION := $(shell ./scripts/manage-dev-version increment)
+DEV_VERSION := $(shell ./scripts/manage-dev-version get)
 VERSION := $(BASE_VERSION).dev$(DEV_VERSION)
 $(info Using dev version: $(VERSION))
 

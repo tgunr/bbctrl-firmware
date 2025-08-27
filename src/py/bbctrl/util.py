@@ -26,6 +26,7 @@
 ################################################################################
 
 from datetime import datetime
+import os
 import pkg_resources
 from pkg_resources import Requirement, resource_filename
 import socket
@@ -48,7 +49,22 @@ def get_resource(path):
     return resource_filename(Requirement.parse('bbctrl'), 'bbctrl/' + path)
 
 
-def get_version(): return _version
+def get_version():
+    # Check for dev version file first (our new dev version system)
+    try:
+        dev_version_file = os.path.join(os.path.dirname(__file__), '../../../.dev-version')
+        if os.path.exists(dev_version_file):
+            with open(dev_version_file, 'r') as f:
+                dev_num = f.read().strip()
+            if dev_num.isdigit():
+                # Get base version from package metadata and add dev suffix
+                base_version = _version
+                return f"{base_version}.dev{dev_num}"
+    except:
+        pass
+
+    # Fall back to package metadata version
+    return _version
 def get_model(): return _model
 
 # Legacy version parsing for backward compatibility
