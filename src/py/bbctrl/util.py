@@ -95,7 +95,13 @@ def parse_version(s):
                     # Stop at first non-numeric part (like 'dev2')
                     break
             if numeric_parts:
-                return tuple(numeric_parts)
+                # Try to create a Version object from the numeric parts
+                try:
+                    version_str = '.'.join(map(str, numeric_parts))
+                    return semver_parse(version_str)
+                except ValueError:
+                    # If Version object creation fails, return tuple as last resort
+                    return tuple(numeric_parts)
             else:
                 raise ValueError(f"Unable to parse version: {s}")
         except (ValueError, IndexError):
@@ -107,7 +113,13 @@ def parse_version(s):
                 except ValueError:
                     break
             if numeric_parts:
-                return tuple(numeric_parts)
+                # Try to create a Version object from the numeric parts
+                try:
+                    version_str = '.'.join(map(str, numeric_parts))
+                    return semver_parse(version_str)
+                except ValueError:
+                    # If Version object creation fails, return tuple as last resort
+                    return tuple(numeric_parts)
             else:
                 raise ValueError(f"Unable to parse version: {s}")
 
