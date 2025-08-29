@@ -20,10 +20,14 @@ RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
 VERSION  := $(shell sed -n 's/^.*"version": "\([^"]*\)",.*$$/\1/p' package.json)
-PKG_NAME := bbctrl-$(VERSION)
+# Normalize version to PEP 440 format for Python packaging
+NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION)'; print(re.sub(r'-([a-zA-Z]+)\.(\d+)', r'.\1\2', v))")
+PKG_NAME := bbctrl-$(NORMALIZED_VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
 BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
-BETA_PKG_NAME := bbctrl-$(BETA_VERSION)
+# Normalize beta version to PEP 440 format
+NORMALIZED_BETA_VERSION := $(shell python3 -c "import re; v='$(BETA_VERSION)'; print(re.sub(r'-([a-zA-Z]+)\.(\d+)', r'.\1\2', v))")
+BETA_PKG_NAME := bbctrl-$(NORMALIZED_BETA_VERSION)
 CUR_BETA_VERSION := $(shell cat dist/latest-beta.txt)
 CUR_BETA_PKG_NAME := bbctrl-$(CUR_BETA_VERSION)
 
