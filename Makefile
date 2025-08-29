@@ -39,14 +39,10 @@ $(info SUBPROJECTS="$(SUBPROJECTS)")
 WATCH := src/pug src/pug/templates src/stylus src/js src/resources Makefile
 WATCH += src/static
 
-ifndef HOST
+USER=bbmc
 HOST=bbctrl.local
-endif
-
-ifndef PASSWORD
 PASSWORD=buildbotics
-endif
-
+SSHID=$HOME/.ssh/id_rsa
 
 all: html $(SUBPROJECTS)
 
@@ -65,7 +61,7 @@ demo: html resources bbemu
 bbemu:
 	$(MAKE) -C src/avr/emu
 
-pkg: all $(SUBPROJECTS)
+pkg: all $(SUBPROJECTS) arm-bin
 	#cp -a $(SHARE)/camotics/tpl_lib src/py/bbctrl/
 	./setup.py sdist
 
@@ -73,7 +69,12 @@ beta-pkg: pkg
 	cp dist/$(PKG_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
 	echo -n $(BETA_VERSION) > dist/latest-beta.txt
 
-arm-bin: camotics bbkbd updiprog rpipdi
+arm-bin:
+	mkdir -p bin
+	cp camotics/build/camotics.so bin/
+	cp bbkbd/bbkbd bin/
+	cp updiprog/updiprog bin/
+	cp rpipdi/rpipdi bin/
 
 %.img.xz: %.img
 	xz -T $(CPUS) $<
@@ -100,13 +101,13 @@ push-beta:
 	  $(PUB_PATH)/
 
 update: pkg
-	http_proxy= ./scripts/remote-firmware-update $(HOST) "$(PASSWORD)" \
+	http_proxy= ./scripts/remote-firmware-update $(USER)@$(HOST) "$(PASSWORD)" \
 	  dist/$(PKG_NAME).tar.bz2
 	@-tput sgr0 && echo # Fix terminal output
 
 ssh-update: pkg
-	scp scripts/update-bbctrl dist/$(PKG_NAME).tar.bz2 $(HOST):/tmp/
-	ssh -t $(HOST) "sudo /tmp/update-bbctrl /tmp/$(PKG_NAME).tar.bz2"
+	scp -i $(SSHID) scripts/update-bbctrl dist/$(PKG_NAME).tar.bz2 $(USER)@$(HOST):/tmp/
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo /tmp/update-bbctrl /tmp/$(PKG_NAME).tar.bz2"
 
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
@@ -159,5 +160,5 @@ clean: tidy
 dist-clean: clean
 	rm -rf node_modules
 
-.PHONY: all install clean tidy pkg camotics lint pylint jshint
+.PHONY: all install clean tidy pkg arm-bin lint pylint jshint
 .PHONY: html resources dist-clean
