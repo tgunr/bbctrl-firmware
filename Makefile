@@ -39,14 +39,10 @@ $(info SUBPROJECTS="$(SUBPROJECTS)")
 WATCH := src/pug src/pug/templates src/stylus src/js src/resources Makefile
 WATCH += src/static
 
-ifndef HOST
+USER=bbmc
 HOST=bbctrl.local
-endif
-
-ifndef PASSWORD
 PASSWORD=buildbotics
-endif
-
+SSHID=$HOME/.ssh/id_rsa
 
 all: html $(SUBPROJECTS)
 
