@@ -26,3 +26,5 @@ __pycache__
 /bin
 /rootfs
 /share
+rpipdi-source.tar.gz
+.kilocode/mcp.json
