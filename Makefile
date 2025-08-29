@@ -42,7 +42,7 @@ WATCH += src/static
 USER=bbmc
 HOST=bbctrl.local
 PASSWORD=buildbotics
-SSHID=$HOME/.ssh/id_rsa
+SSHID=$(HOME)/.ssh/id_rsa
 
 all: html $(SUBPROJECTS)
 
@@ -106,8 +106,8 @@ update: pkg
 	@-tput sgr0 && echo # Fix terminal output
 
 ssh-update: pkg
-	scp -i $(SSHID) scripts/update-bbctrl dist/$(PKG_NAME).tar.bz2 $(USER)@$(HOST):/tmp/
-	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo /tmp/update-bbctrl /tmp/$(PKG_NAME).tar.bz2"
+	scp -i $(SSHID) scripts/update-bbctrl dist/$(PKG_NAME).tar.bz2 $(USER)@$(HOST):~/
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo mv ~/update-bbctrl ~/$(PKG_NAME).tar.bz2 /tmp/ && sudo /tmp/update-bbctrl /tmp/$(PKG_NAME).tar.bz2"
 
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
