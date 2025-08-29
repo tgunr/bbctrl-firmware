@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 FWPATH=/var/lib/bbctrl/firmware
 UPDIPROG=/usr/local/bin/updiprog
