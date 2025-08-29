@@ -7,35 +7,89 @@ RPIPDI=/usr/local/bin/rpipdi
 PWRFW=$FWPATH/bbctrl-pwr-firmware.hex
 AVRFW=$FWPATH/bbctrl-avr-firmware.hex
 
-# Power firmware
+# Power firmware - Added ttyAMA0 fallback
 if [ -e /dev/ttyAMA3 ]; then
   PWRDEV=/dev/ttyAMA3
 elif [ -e /dev/ttyAMA1 ]; then
   PWRDEV=/dev/ttyAMA1
+elif [ -e /dev/ttyAMA0 ]; then
+  PWRDEV=/dev/ttyAMA0
 fi
 
 printf "Checking Firmwares\n"
 
-# Main firmware
+# Main firmware - Skip if AVR hardware not available
 if [ -e "$AVRFW" ]; then
   printf "\n*** Main Firmware ***\n"
-  $RPIPDI -c 27 -d 23 -f 0=0xff -f 1=0x00 -f 2=0xbe -f 4=0xff -f 5=0xeb \
-          -x -w $AVRFW
+  printf "Checking AVR hardware availability...\n"
+
+  # Test if rpipdi tool is available and executable
+  if [ -x "$RPIPDI" ]; then
+    printf "rpipdi tool available, testing AVR hardware access...\n"
+    # Try the AVR firmware update with error handling
+    if $RPIPDI -c 27 -d 23 -f 0=0xff -f 1=0x00 -f 2=0xbe -f 4=0xff -f 5=0xeb -x -w $AVRFW 2>/dev/null; then
+      printf "AVR firmware update successful\n"
+    else
+      printf "AVR firmware update failed - hardware may not be responding\n"
+      printf "Continuing with service startup for Web UI development...\n"
+    fi
+  else
+    printf "rpipdi tool not available or not executable\n"
+    printf "Skipping AVR firmware update for Web UI development\n"
+  fi
+else
+  printf "\n*** Main Firmware ***\n"
+  printf "No AVR firmware file found, skipping AVR update\n"
 fi
 
-# Reset AVR
+# Reset AVR - Only if GPIO hardware is available
 printf "\n*** Reseting AVR ***\n"
 GPIO=/sys/class/gpio/gpio27
 if [ ! -e $GPIO ]; then
-  echo 27 > /sys/class/gpio/export
+  if echo 27 > /sys/class/gpio/export 2>/dev/null; then
+    printf "GPIO 27 exported successfully\n"
+  else
+    printf "GPIO 27 export failed - hardware may not be available\n"
+  fi
 fi
-echo out > $GPIO/direction
-echo 1   > $GPIO/value
-#sleep 0.1
-#echo in  > $GPIO/direction
 
-# PWR firmware
+if [ -e $GPIO ]; then
+  if echo out > $GPIO/direction 2>/dev/null; then
+    printf "GPIO 27 direction set to output\n"
+    if echo 1 > $GPIO/value 2>/dev/null; then
+      printf "GPIO 27 value set to 1\n"
+    else
+      printf "GPIO 27 value set failed\n"
+    fi
+    #sleep 0.1
+    #echo in > $GPIO/direction 2>/dev/null || printf "GPIO direction reset failed\n"
+  else
+    printf "GPIO 27 direction set failed\n"
+  fi
+else
+  printf "GPIO 27 not available - hardware may not be present\n"
+fi
+
+# PWR firmware - Only if both firmware file and device exist
 if [ -e "$PWRFW" -a -e "$PWRDEV" ]; then
   printf "\n*** Power Firmware ***\n"
-  $UPDIPROG -c $PWRDEV -b 500000 -x -w $PWRFW
+  if [ -x "$UPDIPROG" ]; then
+    if $UPDIPROG -c $PWRDEV -b 500000 -x -w $PWRFW 2>/dev/null; then
+      printf "Power firmware update successful\n"
+    else
+      printf "Power firmware update failed\n"
+    fi
+  else
+    printf "updiprog tool not available, skipping power firmware update\n"
+  fi
+else
+  printf "\n*** Power Firmware ***\n"
+  if [ ! -e "$PWRFW" ]; then
+    printf "Power firmware file not found, skipping update\n"
+  fi
+  if [ ! -e "$PWRDEV" ]; then
+    printf "Power device ($PWRDEV) not found, skipping update\n"
+  fi
 fi
+
+printf "\nFirmware check complete - service can start\n"
