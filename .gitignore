@@ -28,3 +28,4 @@ __pycache__
 /share
 rpipdi-source.tar.gz
 .kilocode/mcp.json
+.build-info
