@@ -37,7 +37,14 @@ import re
 import gzip
 import struct
 import math
-import bbctrl.camotics as camotics # pylint: disable=no-name-in-module,import-error
+try:
+    import bbctrl.camotics as camotics # pylint: disable=no-name-in-module,import-error
+    CAMOTICS_AVAILABLE = True
+except ImportError as e:
+    import sys
+    print('Error loading camotics:', str(e), file=sys.stderr)
+    CAMOTICS_AVAILABLE = False
+    camotics = None
 
 
 reLogLine = re.compile(
@@ -86,6 +93,10 @@ class Plan(object):
         self.config = config
 
         self.lines = sum(1 for line in open(path, 'rb'))
+
+        if not CAMOTICS_AVAILABLE:
+            raise ImportError("Camotics module is required for motion planning but could not be imported. "
+                            "Please ensure camotics is properly installed.")
 
         self.planner = camotics.Planner()
         self.planner.set_resolver(self.get_var_cb)

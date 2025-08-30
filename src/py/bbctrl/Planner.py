@@ -36,8 +36,11 @@ from .CommandQueue import *
 
 try:
     from . import camotics # pylint: disable=no-name-in-module,import-error
-except:
-    print('Error loading camotics')
+    CAMOTICS_AVAILABLE = True
+except ImportError as e:
+    print('Error loading camotics:', str(e))
+    CAMOTICS_AVAILABLE = False
+    camotics = None
 
 __all__ = ['Planner']
 
@@ -326,12 +329,18 @@ class Planner():
         # Release planner callbacks
         if self.planner is not None:
             self.planner.set_resolver(None)
-            camotics.set_logger(None)
+            if CAMOTICS_AVAILABLE:
+                camotics.set_logger(None)
 
 
     def reset(self, stop = True):
         self._end_program('Program reset', True)
         if stop: self.ctrl.mach.stop()
+
+        if not CAMOTICS_AVAILABLE:
+            raise ImportError("Camotics module is required for motion planning but could not be imported. "
+                            "Please ensure camotics is properly installed.")
+
         self.planner = camotics.Planner()
         self.planner.set_resolver(self._get_var_cb)
         # TODO logger is global and will not work correctly in demo mode
