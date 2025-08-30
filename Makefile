@@ -75,6 +75,8 @@ bbemu:
 	$(MAKE) -C src/avr/emu
 
 pkg: all $(SUBPROJECTS) arm-bin
+	# Create dist directory if it doesn't exist
+	@mkdir -p dist
 	# Update package.json with build number for correct tarball naming
 	@cp package.json package.json.backup
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION_WITH_BUILD)"/' package.json
