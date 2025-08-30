@@ -1,12 +1,10 @@
 recursive-include src/py/bbctrl/http *
-recursive-include src/py/bbctrl/tpl_lib *
 include package.json README.md scripts/install.sh
 include src/avr/bbctrl-avr-firmware.hex
 include src/pwr/bbctrl-pwr-firmware.hex
 include scripts/buildbotics.gc
-include scripts/bbctrl.service
 include bin/camotics.so
 include bin/bbkbd
 include bin/updiprog
 include bin/rpipdi
-global-exclude .gitignore
+exclude .gitignore
