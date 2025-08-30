@@ -43,7 +43,7 @@ class Version:
     # Regex pattern for SemVer validation
     SEMVER_PATTERN = re.compile(
         r'^(\d+)\.(\d+)\.(\d+)'  # MAJOR.MINOR.PATCH
-        r'(-([a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)*))?'  # [-PRERELEASE]
+        r'(-([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*))?'  # [-PRERELEASE]
         r'(\+([a-zA-Z0-9](?:\.[a-zA-Z0-9]+)*))?'  # [+BUILD]
         r'$'
     )
@@ -88,17 +88,40 @@ class Version:
         if not self.prerelease:
             return
 
-        # Check if it starts with valid identifier
+        # Check if it starts with valid identifier or is a valid single identifier
         parts = self.prerelease.split('.')
-        if parts[0] not in self.PRERELEASE_IDENTIFIERS:
-            raise ValueError(f"Invalid prerelease identifier: {parts[0]}")
 
-        # Validate numeric part for known identifiers
-        if len(parts) >= 2:
-            try:
-                int(parts[1])
-            except ValueError:
-                raise ValueError(f"Prerelease identifier must have numeric part: {self.prerelease}")
+        # Check first part
+        first_part = parts[0]
+        if not first_part:
+            raise ValueError(f"Invalid prerelease identifier: empty first part")
+
+        # Check if it's a known identifier (dev, alpha, beta, rc) optionally followed by digits
+        if first_part in self.PRERELEASE_IDENTIFIERS:
+            # Valid known identifier, check if there's a numeric part
+            pass
+        else:
+            # Check if it's a single identifier like "dev3", "alpha1", etc.
+            for identifier in self.PRERELEASE_IDENTIFIERS:
+                if first_part.startswith(identifier):
+                    remaining = first_part[len(identifier):]
+                    if remaining.isdigit():
+                        # Valid format like "dev3", "alpha1"
+                        break
+            else:
+                # Check if the whole first part is just a known identifier
+                if first_part not in self.PRERELEASE_IDENTIFIERS:
+                    raise ValueError(f"Invalid prerelease identifier: {first_part}")
+
+        # Validate remaining parts
+        for part in parts[1:]:
+            if not part:
+                raise ValueError(f"Invalid prerelease identifier: empty part in {self.prerelease}")
+            # Each part after the first should be numeric or another valid identifier
+            if not (part.isdigit() or part in self.PRERELEASE_IDENTIFIERS):
+                # Allow alphanumeric combinations for complex identifiers
+                if not part.replace('_', '').replace('-', '').isalnum():
+                    raise ValueError(f"Invalid prerelease identifier part: {part}")
 
     @classmethod
     def parse(cls, version_string: str) -> 'Version':
@@ -175,19 +198,45 @@ class Version:
         self_parts = self.prerelease.split('.')
         other_parts = other_prerelease.split('.')
 
+        # Extract base identifier and numeric part for each
+        def parse_identifier_part(part: str) -> tuple[str, int]:
+            for identifier in self.PRERELEASE_IDENTIFIERS:
+                if part.startswith(identifier):
+                    remaining = part[len(identifier):]
+                    if remaining.isdigit():
+                        return identifier, int(remaining)
+                    elif not remaining:
+                        return identifier, 0
+            # If no match, treat as unknown identifier with precedence after all known ones
+            return part, 0
+
+        self_base, self_num = parse_identifier_part(self_parts[0])
+        other_base, other_num = parse_identifier_part(other_parts[0])
+
         # Compare identifier precedence
-        self_idx = self.PRERELEASE_IDENTIFIERS.index(self_parts[0])
-        other_idx = self.PRERELEASE_IDENTIFIERS.index(other_parts[0])
+        try:
+            self_idx = self.PRERELEASE_IDENTIFIERS.index(self_base)
+        except ValueError:
+            self_idx = len(self.PRERELEASE_IDENTIFIERS)  # Unknown identifiers come last
+
+        try:
+            other_idx = self.PRERELEASE_IDENTIFIERS.index(other_base)
+        except ValueError:
+            other_idx = len(self.PRERELEASE_IDENTIFIERS)  # Unknown identifiers come last
 
         if self_idx != other_idx:
             return (self_idx > other_idx) - (self_idx < other_idx)
 
         # Same identifier type, compare numeric parts
-        if len(self_parts) >= 2 and len(other_parts) >= 2:
-            self_num = int(self_parts[1])
-            other_num = int(other_parts[1])
-            if self_num != other_num:
-                return (self_num > other_num) - (self_num < other_num)
+        if self_num != other_num:
+            return (self_num > other_num) - (self_num < other_num)
+
+        # If we have more parts, compare them lexicographically
+        self_remaining = '.'.join(self_parts[1:])
+        other_remaining = '.'.join(other_parts[1:])
+
+        if self_remaining != other_remaining:
+            return (self_remaining > other_remaining) - (self_remaining < other_remaining)
 
         return 0
 
@@ -244,11 +293,27 @@ class Version:
             raise ValueError("Cannot bump prerelease on final version")
 
         parts = self.prerelease.split('.')
-        if len(parts) >= 2:
-            num = int(parts[1]) + 1
-            return Version(f"{self.major}.{self.minor}.{self.patch}-{parts[0]}.{num}")
-        else:
-            return Version(f"{self.major}.{self.minor}.{self.patch}-{parts[0]}.1")
+
+        # Parse the first part to extract base identifier and number
+        first_part = parts[0]
+        for identifier in self.PRERELEASE_IDENTIFIERS:
+            if first_part.startswith(identifier):
+                remaining = first_part[len(identifier):]
+                if remaining.isdigit():
+                    # Format like "dev3" - bump the number
+                    num = int(remaining) + 1
+                    return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}{num}")
+                elif not remaining:
+                    # Check if we have a dot-separated number (e.g., "dev.4")
+                    if len(parts) == 2 and parts[1].isdigit():
+                        num = int(parts[1]) + 1
+                        return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}.{num}")
+                    else:
+                        # Format like "dev" - add .1
+                        return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}1")
+
+        # If no known identifier found, append .1 to the whole thing
+        return Version(f"{self.major}.{self.minor}.{self.patch}-{first_part}.1")
 
     def to_final(self) -> 'Version':
         """Return final version (without prerelease)."""

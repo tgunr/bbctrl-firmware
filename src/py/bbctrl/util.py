@@ -31,7 +31,7 @@ from pkg_resources import Requirement, resource_filename
 import socket
 
 
-_version = pkg_resources.require('bbctrl')[0].version
+_version = pkg_resources.require('bbctrl')[0].version.strip('\'"')
 
 try:
   with open('/sys/firmware/devicetree/base/model', 'r') as f:

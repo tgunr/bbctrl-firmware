@@ -34,6 +34,7 @@ import re
 import datetime
 
 from . import util
+from . import version
 
 __all__ = ['Config']
 
