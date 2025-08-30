@@ -79,12 +79,13 @@ class Config(object):
             pat = re.compile(r'^.*/config-v(\d+\.\d+\.\d+)\.json$')
             for name in glob.glob(root + '/config-v*.json'):
                 m = pat.match(name)
-                if m: versions.append(util.parse_version(m.groups()[0]))
+                if m: versions.append(version.parse_version(m.groups()[0]))
 
-            current = util.parse_version(self.version)
+            current = version.parse_version(self.version)
             versions = list(filter(lambda v: v < current, versions))
             if len(versions):
-                return root + '/config-v%d.%d.%d.json' % max(versions)
+                max_version = max(versions)
+                return root + '/config-v%d.%d.%d.json' % (max_version.major, max_version.minor, max_version.patch)
 
         except: self.log.exception()
 
@@ -165,23 +166,23 @@ class Config(object):
 
 
     def upgrade(self, config):
-        version = util.parse_version(config['version'])
+        version_parsed = version.parse_version(config['version'])
 
-        if version < util.parse_version(self.version):
+        if version_parsed < version.parse_version(self.version):
             self.log.info('Upgrading config from %s to %s' %
-                          (version, self.version))
+                          (version_parsed, self.version))
 
-        if version < (0, 2, 4):
+        if version_parsed < version.parse_version('0.2.4'):
             for motor in config['motors']:
                 for key in 'max-jerk max-velocity'.split():
                     if key in motor: motor[key] /= 1000
 
-        if version < (0, 3, 4):
+        if version_parsed < version.parse_version('0.3.4'):
             for motor in config['motors']:
                 for key in 'max-accel latch-velocity search-velocity'.split():
                     if key in motor: motor[key] /= 1000
 
-        if version < (0, 3, 23):
+        if version_parsed < version.parse_version('0.3.23'):
             if 'tool' in config:
                 if 'spindle-type' in config['tool']:
                     type = config['tool']['spindle-type']
@@ -195,13 +196,13 @@ class Config(object):
                     config['tool']['tool-reversed'] = reversed
                     del config['tool']['spin-reversed']
 
-        if version < (0, 4, 7):
+        if version_parsed < version.parse_version('0.4.7'):
             for motor in config['motors']:
                 if 2 < motor.get('idle-current', 0): motor['idle-current'] = 2
                 if 'enabled' not in motor:
                     motor['enabled'] = motor.get('power-mode', '') != 'disabled'
 
-        if version < (1, 0, 2):
+        if version_parsed < version.parse_version('1.0.2'):
             io_map           = self.template['io-map']
             io_defaults      = io_map['default']
             config['io-map'] = io = copy.deepcopy(io_defaults)
