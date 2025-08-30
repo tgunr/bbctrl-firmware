@@ -40,10 +40,11 @@ class Version:
     # Valid pre-release identifiers in order of precedence (lowest to highest)
     PRERELEASE_IDENTIFIERS = ['dev', 'alpha', 'beta', 'rc']
 
-    # Regex pattern for SemVer validation (supports both - and . for prerelease)
+    # Regex pattern for SemVer validation (supports both - and . for prerelease, and build numbers)
     SEMVER_PATTERN = re.compile(
         r'^(\d+)\.(\d+)\.(\d+)'  # MAJOR.MINOR.PATCH
         r'([-.]([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*))?'  # [-|.]PRERELEASE
+        r'(-(\d+))?'  # [-BUILDNUMBER]
         r'(\+([a-zA-Z0-9](?:\.[a-zA-Z0-9]+)*))?'  # [+BUILD]
         r'$'
     )
@@ -61,6 +62,7 @@ class Version:
         self.version_string = version_string
         self.major, self.minor, self.patch = 0, 0, 0
         self.prerelease: Optional[str] = None
+        self.build_number: Optional[int] = None
         self.build: Optional[str] = None
 
         self._parse(version_string)
@@ -78,8 +80,11 @@ class Version:
         if match.group(4):  # Has prerelease
             self.prerelease = match.group(5)
 
-        if match.group(6):  # Has build metadata
-            self.build = match.group(7)
+        if match.group(6):  # Has build number
+            self.build_number = int(match.group(7))
+
+        if match.group(8):  # Has build metadata
+            self.build = match.group(9)
 
         self._validate_prerelease()
 
@@ -189,7 +194,18 @@ class Version:
         elif not self.prerelease and other.prerelease:
             return 1   # Final release > prerelease
         elif self.prerelease and other.prerelease:
-            return self._compare_prerelease(other.prerelease)
+            prerelease_cmp = self._compare_prerelease(other.prerelease)
+            if prerelease_cmp != 0:
+                return prerelease_cmp
+
+        # Compare build numbers (only if both have them)
+        if self.build_number is not None and other.build_number is not None:
+            if self.build_number != other.build_number:
+                return (self.build_number > other.build_number) - (self.build_number < other.build_number)
+        elif self.build_number is not None:
+            return 1  # Version with build number > version without
+        elif other.build_number is not None:
+            return -1  # Version without build number < version with
 
         return 0  # Equal
 
