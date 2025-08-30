@@ -21,12 +21,15 @@ RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
 VERSION  := $(shell sed -n 's/^.*"version": "\([^"]*\)",.*$$/\1/p' package.json)
 # Normalize version to PEP 440 format for Python packaging
-NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION)'; print(re.sub(r'-([a-zA-Z]+)\.(\d+)', r'.\1\2', v))")
+NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', v))")
 PKG_NAME := bbctrl-$(NORMALIZED_VERSION)
+# Use original version for tarball naming to match SemVer format
+TARBALL_VERSION := $(VERSION)
+TARBALL_NAME := bbctrl-$(TARBALL_VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
 BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
 # Normalize beta version to PEP 440 format
-NORMALIZED_BETA_VERSION := $(shell python3 -c "import re; v='$(BETA_VERSION)'; print(re.sub(r'-([a-zA-Z]+)\.(\d+)', r'.\1\2', v))")
+NORMALIZED_BETA_VERSION := $(shell python3 -c "import re; v='$(BETA_VERSION)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', v))")
 BETA_PKG_NAME := bbctrl-$(NORMALIZED_BETA_VERSION)
 CUR_BETA_VERSION := $(shell cat dist/latest-beta.txt)
 CUR_BETA_PKG_NAME := bbctrl-$(CUR_BETA_VERSION)
@@ -68,9 +71,11 @@ bbemu:
 pkg: all $(SUBPROJECTS) arm-bin
 	#cp -a $(SHARE)/camotics/tpl_lib src/py/bbctrl/
 	./setup.py sdist
+	# Rename the tarball to use the correct SemVer format
+	mv dist/$(PKG_NAME).tar.bz2 dist/$(TARBALL_NAME).tar.bz2
 
 beta-pkg: pkg
-	cp dist/$(PKG_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
+	cp dist/$(TARBALL_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
 	echo -n $(BETA_VERSION) > dist/latest-beta.txt
 
 arm-bin:
@@ -95,7 +100,7 @@ publish-image: $(IMAGE).xz
 
 publish: pkg
 	echo -n $(VERSION) > dist/latest.txt
-	rsync $(RSYNC_OPTS) dist/$(PKG_NAME).tar.bz2 dist/latest.txt $(PUB_PATH)/
+	rsync $(RSYNC_OPTS) dist/$(TARBALL_NAME).tar.bz2 dist/latest.txt $(PUB_PATH)/
 
 publish-beta: beta-pkg
 	$(MAKE) push-beta
@@ -106,12 +111,12 @@ push-beta:
 
 update: pkg
 	http_proxy= ./scripts/remote-firmware-update $(USER)@$(HOST) "$(PASSWORD)" \
-	  dist/$(PKG_NAME).tar.bz2
+	dist/$(PKG_NAME).tar.bz2
 	@-tput sgr0 && echo # Fix terminal output
 
 ssh-update: pkg
-	scp -i $(SSHID) scripts/update-bbctrl dist/$(PKG_NAME).tar.bz2 $(USER)@$(HOST):~/
-	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo mv ~/update-bbctrl ~/$(PKG_NAME).tar.bz2 /tmp/ && sudo /tmp/update-bbctrl /tmp/$(PKG_NAME).tar.bz2"
+	scp -i $(SSHID) scripts/update-bbctrl dist/$(TARBALL_NAME).tar.bz2 $(USER)@$(HOST):~/
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo ./update-bbctrl ./$(TARBALL_NAME).tar.bz2"
 
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
