@@ -19,25 +19,25 @@ RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\\#* \*~ .\\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
-VERSION  := $(shell sed -n 's/^.*"version": "\([^"]*\)",.*$$/\1/p' package.json)
+VERSION  := $(shell python3 -c "import json; print(json.load(open('package.json'))['version'])")
 
 # Build number tracking
 BUILD_INFO_FILE := .build-info
 CURRENT_BUILD := $(shell ./scripts/manage-build-number.sh $(VERSION) $(BUILD_INFO_FILE))
-VERSION_WITH_BUILD := $(VERSION)-$(CURRENT_BUILD)
+VERSION_WITH_BUILD := $(VERSION)+build.$(CURRENT_BUILD)
 
-# Normalize version to PEP 440 format for Python packaging
-NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION_WITH_BUILD)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', re.sub(r'-(\d+)$', r'.\1', v)))")
+# Version is already in PEP 440 format
+NORMALIZED_VERSION := $(VERSION_WITH_BUILD)
 PKG_NAME := bbctrl-$(NORMALIZED_VERSION)
 # Use version with build number for tarball naming
 TARBALL_VERSION := $(VERSION_WITH_BUILD)
 TARBALL_NAME := bbctrl-$(TARBALL_VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
-BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
-# Normalize beta version to PEP 440 format
-NORMALIZED_BETA_VERSION := $(shell python3 -c "import re; v='$(BETA_VERSION)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', v))")
+BETA_VERSION := $(VERSION)rc$(shell ./scripts/next-rc)
+# Beta version is already in PEP 440 format
+NORMALIZED_BETA_VERSION := $(BETA_VERSION)
 BETA_PKG_NAME := bbctrl-$(NORMALIZED_BETA_VERSION)
-CUR_BETA_VERSION := $(shell cat dist/latest-beta.txt)
+CUR_BETA_VERSION := $(shell cat dist/latest-beta.txt 2>/dev/null || echo "none")
 CUR_BETA_PKG_NAME := bbctrl-$(CUR_BETA_VERSION)
 
 IMAGE := $(shell date +%Y%m%d)-debian-bookworm-bbctrl.img

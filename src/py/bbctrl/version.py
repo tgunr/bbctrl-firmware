@@ -31,21 +31,21 @@ from typing import Optional, Tuple, List, Union
 
 class Version:
     """
-    Semantic Version class following SemVer specification with custom pre-release identifiers.
+    Version class following PEP 440 specification.
 
-    Format: MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
-    Pre-release identifiers: dev, alpha, beta, rc
+    Format: MAJOR.MINOR.PATCH[PRERELEASE][+BUILD]
+    Pre-release identifiers: a (alpha), b (beta), rc (release candidate), .dev (development)
     """
 
     # Valid pre-release identifiers in order of precedence (lowest to highest)
-    PRERELEASE_IDENTIFIERS = ['dev', 'alpha', 'beta', 'rc']
+    PRERELEASE_IDENTIFIERS = ['dev', 'a', 'b', 'rc']
 
-    # Regex pattern for SemVer validation (supports both - and . for prerelease, and build numbers)
-    SEMVER_PATTERN = re.compile(
+    # Regex pattern for PEP 440 validation
+    PEP440_PATTERN = re.compile(
         r'^(\d+)\.(\d+)\.(\d+)'  # MAJOR.MINOR.PATCH
-        r'([-.]([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*))?'  # [-|.]PRERELEASE
-        r'(-(\d+))?'  # [-BUILDNUMBER]
-        r'(\+([a-zA-Z0-9](?:\.[a-zA-Z0-9]+)*))?'  # [+BUILD]
+        r'((?:a|b|rc)\d+|'  # PRERELEASE: aN, bN, rcN
+        r'\.dev\d+)?'  # or .devN
+        r'(\+([a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?))?'  # [+BUILD]
         r'$'
     )
 
@@ -54,7 +54,7 @@ class Version:
         Initialize Version object from version string.
 
         Args:
-            version_string: Version string in SemVer format
+            version_string: Version string in PEP 440 format
 
         Raises:
             ValueError: If version string is invalid
@@ -62,71 +62,57 @@ class Version:
         self.version_string = version_string
         self.major, self.minor, self.patch = 0, 0, 0
         self.prerelease: Optional[str] = None
-        self.build_number: Optional[int] = None
         self.build: Optional[str] = None
 
         self._parse(version_string)
 
     def _parse(self, version_string: str) -> None:
         """Parse version string and validate format."""
-        match = self.SEMVER_PATTERN.match(version_string)
+        match = self.PEP440_PATTERN.match(version_string)
         if not match:
-            raise ValueError(f"Invalid version format: {version_string}")
+            raise ValueError(f"Invalid PEP 440 version format: {version_string}")
 
         self.major = int(match.group(1))
         self.minor = int(match.group(2))
         self.patch = int(match.group(3))
 
         if match.group(4):  # Has prerelease
-            self.prerelease = match.group(5)
+            prerelease = match.group(4)
+            # Convert .dev format to dev format for internal storage
+            if prerelease.startswith('.dev'):
+                self.prerelease = prerelease[1:]  # Remove leading dot
+            else:
+                self.prerelease = prerelease
 
-        if match.group(6):  # Has build number
-            self.build_number = int(match.group(7))
-
-        if match.group(8):  # Has build metadata
-            self.build = match.group(9)
+        if match.group(6):  # Has build metadata
+            self.build = match.group(6)
 
         self._validate_prerelease()
 
     def _validate_prerelease(self) -> None:
-        """Validate prerelease identifier format."""
+        """Validate prerelease identifier format according to PEP 440."""
         if not self.prerelease:
             return
 
-        # Check if it starts with valid identifier or is a valid single identifier
-        parts = self.prerelease.split('.')
-
-        # Check first part
-        first_part = parts[0]
-        if not first_part:
-            raise ValueError(f"Invalid prerelease identifier: empty first part")
-
-        # Check if it's a known identifier (dev, alpha, beta, rc) optionally followed by digits
-        if first_part in self.PRERELEASE_IDENTIFIERS:
-            # Valid known identifier, check if there's a numeric part
-            pass
-        else:
-            # Check if it's a single identifier like "dev3", "alpha1", etc.
-            for identifier in self.PRERELEASE_IDENTIFIERS:
-                if first_part.startswith(identifier):
-                    remaining = first_part[len(identifier):]
-                    if remaining.isdigit():
-                        # Valid format like "dev3", "alpha1"
-                        break
+        # PEP 440 prerelease format validation
+        if self.prerelease.startswith('dev'):
+            # devN format
+            if len(self.prerelease) > 3 and self.prerelease[3:].isdigit():
+                return
+            elif self.prerelease == 'dev':
+                return
+        elif self.prerelease.startswith(('a', 'b', 'rc')):
+            # aN, bN, rcN format
+            if self.prerelease.startswith('rc'):
+                identifier = 'rc'
             else:
-                # Check if the whole first part is just a known identifier
-                if first_part not in self.PRERELEASE_IDENTIFIERS:
-                    raise ValueError(f"Invalid prerelease identifier: {first_part}")
+                identifier = self.prerelease[0]
+            if identifier in self.PRERELEASE_IDENTIFIERS:
+                remaining = self.prerelease[len(identifier):]
+                if remaining.isdigit() or not remaining:
+                    return
 
-        # Validate remaining parts
-        for part in parts[1:]:
-            if not part:
-                raise ValueError(f"Invalid prerelease identifier: empty part in {self.prerelease}")
-            # Each part after the first should be numeric or another valid identifier
-            if not (part.isdigit() or part in self.PRERELEASE_IDENTIFIERS):
-                # Allow alphanumeric combinations for complex identifiers
-                if not part.replace('_', '').replace('-', '').isalnum():
-                    raise ValueError(f"Invalid prerelease identifier part: {part}")
+        raise ValueError(f"Invalid PEP 440 prerelease identifier: {self.prerelease}")
 
     @classmethod
     def parse(cls, version_string: str) -> 'Version':
@@ -135,7 +121,7 @@ class Version:
 
     @classmethod
     def is_valid(cls, version_string: str) -> bool:
-        """Check if version string is valid SemVer format."""
+        """Check if version string is valid PEP 440 format."""
         try:
             cls(version_string)
             return True
@@ -143,8 +129,17 @@ class Version:
             return False
 
     def __str__(self) -> str:
-        """Return version string."""
-        return self.version_string
+        """Return version string in PEP 440 format."""
+        base = f"{self.major}.{self.minor}.{self.patch}"
+        if self.prerelease:
+            # Format prerelease according to PEP 440
+            if self.prerelease.startswith('dev'):
+                base += f".{self.prerelease}"
+            else:
+                base += self.prerelease
+        if self.build:
+            base += f"+{self.build}"
+        return base
 
     def __repr__(self) -> str:
         """Return string representation."""
@@ -198,15 +193,8 @@ class Version:
             if prerelease_cmp != 0:
                 return prerelease_cmp
 
-        # Compare build numbers (only if both have them)
-        if self.build_number is not None and other.build_number is not None:
-            if self.build_number != other.build_number:
-                return (self.build_number > other.build_number) - (self.build_number < other.build_number)
-        elif self.build_number is not None:
-            return 1  # Version with build number > version without
-        elif other.build_number is not None:
-            return -1  # Version without build number < version with
-
+        # PEP 440 doesn't specify ordering for build metadata
+        # Build metadata is ignored for version comparison
         return 0  # Equal
 
     def _compare_prerelease(self, other_prerelease: str) -> int:
@@ -266,11 +254,11 @@ class Version:
 
     def is_alpha(self) -> bool:
         """Check if this is an alpha release."""
-        return self.prerelease and self.prerelease.startswith('alpha')
+        return self.prerelease and self.prerelease.startswith('a')
 
     def is_beta(self) -> bool:
         """Check if this is a beta release."""
-        return self.prerelease and self.prerelease.startswith('beta')
+        return self.prerelease and self.prerelease.startswith('b')
 
     def is_release_candidate(self) -> bool:
         """Check if this is a release candidate."""
@@ -308,28 +296,31 @@ class Version:
         if not self.prerelease:
             raise ValueError("Cannot bump prerelease on final version")
 
-        parts = self.prerelease.split('.')
+        # Handle different PEP 440 prerelease formats
+        if self.prerelease.startswith('dev'):
+            # devN format
+            if self.prerelease == 'dev':
+                return Version(f"{self.major}.{self.minor}.{self.patch}.dev1")
+            else:
+                num = int(self.prerelease[3:]) + 1
+                return Version(f"{self.major}.{self.minor}.{self.patch}.dev{num}")
+        elif self.prerelease.startswith(('a', 'b', 'rc')):
+            # aN, bN, rcN format
+            if self.prerelease.startswith('rc'):
+                identifier = 'rc'
+                remaining = self.prerelease[2:]
+            else:
+                identifier = self.prerelease[0]
+                remaining = self.prerelease[1:]
 
-        # Parse the first part to extract base identifier and number
-        first_part = parts[0]
-        for identifier in self.PRERELEASE_IDENTIFIERS:
-            if first_part.startswith(identifier):
-                remaining = first_part[len(identifier):]
-                if remaining.isdigit():
-                    # Format like "dev3" - bump the number
-                    num = int(remaining) + 1
-                    return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}{num}")
-                elif not remaining:
-                    # Check if we have a dot-separated number (e.g., "dev.4")
-                    if len(parts) == 2 and parts[1].isdigit():
-                        num = int(parts[1]) + 1
-                        return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}.{num}")
-                    else:
-                        # Format like "dev" - add .1
-                        return Version(f"{self.major}.{self.minor}.{self.patch}-{identifier}1")
+            if remaining.isdigit():
+                num = int(remaining) + 1
+                return Version(f"{self.major}.{self.minor}.{self.patch}{identifier}{num}")
+            else:
+                return Version(f"{self.major}.{self.minor}.{self.patch}{identifier}1")
 
-        # If no known identifier found, append .1 to the whole thing
-        return Version(f"{self.major}.{self.minor}.{self.patch}-{first_part}.1")
+        # If no known identifier found, append 1
+        return Version(f"{self.major}.{self.minor}.{self.patch}{self.prerelease}1")
 
     def to_final(self) -> 'Version':
         """Return final version (without prerelease)."""
@@ -338,22 +329,26 @@ class Version:
     def next_stage(self) -> 'Version':
         """Move to next development stage."""
         if self.is_development():
-            return Version(f"{self.major}.{self.minor}.{self.patch}-alpha.1")
+            return Version(f"{self.major}.{self.minor}.{self.patch}a1")
         elif self.is_alpha():
-            return Version(f"{self.major}.{self.minor}.{self.patch}-beta.1")
+            return Version(f"{self.major}.{self.minor}.{self.patch}b1")
         elif self.is_beta():
-            return Version(f"{self.major}.{self.minor}.{self.patch}-rc.1")
+            return Version(f"{self.major}.{self.minor}.{self.patch}rc1")
         elif self.is_release_candidate():
             return Version(f"{self.major}.{self.minor}.{self.patch}")
         else:
             # Final version - bump minor for next development cycle
-            return Version(f"{self.major}.{self.minor + 1}.0-dev.1")
+            return Version(f"{self.major}.{self.minor + 1}.0.dev1")
 
     def with_build(self, build: str) -> 'Version':
         """Return version with build metadata."""
         base = f"{self.major}.{self.minor}.{self.patch}"
         if self.prerelease:
-            base += f"-{self.prerelease}"
+            # Format prerelease according to PEP 440
+            if self.prerelease.startswith('dev'):
+                base += f".{self.prerelease}"
+            else:
+                base += self.prerelease
         return Version(f"{base}+{build}")
 
 

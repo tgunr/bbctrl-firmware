@@ -29,6 +29,7 @@ from datetime import datetime
 import pkg_resources
 from pkg_resources import Requirement, resource_filename
 import socket
+from .version import Version
 
 
 _version = pkg_resources.require('bbctrl')[0].version.strip('\'"')
@@ -49,8 +50,8 @@ def get_resource(path):
 
 def get_version(): return _version
 def get_model(): return _model
-def parse_version(s): return tuple([int(x) for x in s.split('.')])
-def version_less(a, b): return parse_version(a) < parse_version(b)
+def parse_version(s): return Version(s)
+def version_less(a, b): return Version(a) < Version(b)
 def timestamp(): return datetime.now().strftime('%Y%m%d-%H%M%S')
 
 
