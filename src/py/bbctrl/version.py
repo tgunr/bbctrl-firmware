@@ -40,10 +40,10 @@ class Version:
     # Valid pre-release identifiers in order of precedence (lowest to highest)
     PRERELEASE_IDENTIFIERS = ['dev', 'alpha', 'beta', 'rc']
 
-    # Regex pattern for SemVer validation
+    # Regex pattern for SemVer validation (supports both - and . for prerelease)
     SEMVER_PATTERN = re.compile(
         r'^(\d+)\.(\d+)\.(\d+)'  # MAJOR.MINOR.PATCH
-        r'(-([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*))?'  # [-PRERELEASE]
+        r'([-.]([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*))?'  # [-|.]PRERELEASE
         r'(\+([a-zA-Z0-9](?:\.[a-zA-Z0-9]+)*))?'  # [+BUILD]
         r'$'
     )
