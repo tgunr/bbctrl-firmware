@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Check that we are on a Pi 4
 PI4=false
