@@ -50,3 +50,4 @@ docker/Dockerfile.backup
 bbkbd/
 rpipdi/
 updiprog/
+.devcontainer
