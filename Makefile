@@ -20,11 +20,17 @@ RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
 VERSION  := $(shell sed -n 's/^.*"version": "\([^"]*\)",.*$$/\1/p' package.json)
+
+# Build number tracking
+BUILD_INFO_FILE := .build-info
+CURRENT_BUILD := $(shell ./scripts/manage-build-number.sh $(VERSION) $(BUILD_INFO_FILE))
+VERSION_WITH_BUILD := $(VERSION)-$(CURRENT_BUILD)
+
 # Normalize version to PEP 440 format for Python packaging
-NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', v))")
+NORMALIZED_VERSION := $(shell python3 -c "import re; v='$(VERSION_WITH_BUILD)'; print(re.sub(r'-([a-zA-Z]+)(\d+)', r'.\1\2', re.sub(r'-(\d+)$', r'.\1', v)))")
 PKG_NAME := bbctrl-$(NORMALIZED_VERSION)
-# Use original version for tarball naming to match SemVer format
-TARBALL_VERSION := $(VERSION)
+# Use version with build number for tarball naming
+TARBALL_VERSION := $(VERSION_WITH_BUILD)
 TARBALL_NAME := bbctrl-$(TARBALL_VERSION)
 PUB_PATH := root@buildbotics.com:/var/www/buildbotics.com/bbctrl-2.0
 BETA_VERSION := $(VERSION)-rc$(shell ./scripts/next-rc)
