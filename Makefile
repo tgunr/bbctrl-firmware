@@ -75,14 +75,19 @@ bbemu:
 	$(MAKE) -C src/avr/emu
 
 pkg: all $(SUBPROJECTS) arm-bin
+	# Update package.json with build number for correct tarball naming
+	@cp package.json package.json.backup
+	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION_WITH_BUILD)"/' package.json
 	#cp -a $(SHARE)/camotics/tpl_lib src/py/bbctrl/
 	./setup.py sdist
+	# Restore original package.json
+	@mv package.json.backup package.json
 	# Rename the tarball to use the correct SemVer format
-	mv dist/$(PKG_NAME).tar.bz2 dist/$(TARBALL_NAME).tar.bz2
+	@mv dist/$(PKG_NAME).tar.bz2 dist/$(TARBALL_NAME).tar.bz2 2>/dev/null || echo "Tarball already has correct name"
 
 beta-pkg: pkg
 	cp dist/$(TARBALL_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
-	echo -n $(BETA_VERSION) > dist/latest-beta.txt
+	echo -n $(VERSION_WITH_BUILD) > dist/latest-beta.txt
 
 arm-bin:
 	mkdir -p bin
@@ -105,7 +110,7 @@ publish-image: $(IMAGE).xz
 	rsync --progress $< $(IMG_PATH)/
 
 publish: pkg
-	echo -n $(VERSION) > dist/latest.txt
+	echo -n $(VERSION_WITH_BUILD) > dist/latest.txt
 	rsync $(RSYNC_OPTS) dist/$(TARBALL_NAME).tar.bz2 dist/latest.txt $(PUB_PATH)/
 
 publish-beta: beta-pkg
