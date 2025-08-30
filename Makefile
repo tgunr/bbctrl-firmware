@@ -176,7 +176,7 @@ tidy:
 clean: tidy
 	rm -rf build html dist
 	@for SUB in $(SUBPROJECTS); do \
-	  $(MAKE) -C src/$$SUB clean; \
+	  $(MAKE) -C $$SUB clean; \
 	done
 
 dist-clean: clean
