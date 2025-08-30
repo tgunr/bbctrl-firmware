@@ -84,7 +84,7 @@ pkg: all $(SUBPROJECTS) arm-bin
 	./setup.py sdist
 	# Restore original package.json
 	@mv package.json.backup package.json
-	# Rename the tarball to use the correct SemVer format
+	# Rename the tarball to use the correct PEP 440 format
 	@mv dist/$(PKG_NAME).tar.bz2 dist/$(TARBALL_NAME).tar.bz2 2>/dev/null || echo "Tarball already has correct name"
 
 beta-pkg: pkg
