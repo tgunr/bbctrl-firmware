@@ -285,9 +285,20 @@ copy_binary() {
     mkdir -p bin
 
     # Copy the ARM binary
-    sudo cp "$CHROOT_DIR/opt/camotics/build/camotics.so" camotics/build/
-    cp camotics/build/camotics.so src/py/bbctrl/
-    cp camotics/build/camotics.so bin/
+    log_info "Copying binary from chroot to project directories..."
+    sudo cp "$CHROOT_DIR/opt/camotics/build/camotics.so" camotics/build/ || {
+        log_error "Failed to copy from chroot to camotics/build/"
+        exit 1
+    }
+    cp camotics/build/camotics.so src/py/bbctrl/ || {
+        log_error "Failed to copy to src/py/bbctrl/"
+        exit 1
+    }
+    cp camotics/build/camotics.so bin/ || {
+        log_error "Failed to copy to bin/"
+        exit 1
+    }
+    log_info "Binary copy completed successfully"
 
     # Verify the binary architecture
     if file camotics/build/camotics.so | grep -q "ARM"; then
