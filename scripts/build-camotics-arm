@@ -215,13 +215,13 @@ build_camotics() {
         if [[ ! -d embedded-v8 ]]; then
             git clone --depth=1 https://github.com/CauldronDevelopmentLLC/embedded-v8
             # Fix V8 pointer compression configuration and python usage
-            sed -i 's/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true v8_enable_pointer_compression=true/' embedded-v8/build.sh
+            # Fix V8 build configuration with proper compiler flags
+            sed -i 's/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true v8_enable_pointer_compression=true treat_warnings_as_errors=false/' embedded-v8/build.sh
             sed -i 's/python gn\/build\/gen.py/python3 gn\/build\/gen.py/' embedded-v8/build.sh
             sed -i 's/apt-get update/apt-get update\napt-get -y install python3\nln -sf \/usr\/bin\/python3 \/usr\/bin\/python/' embedded-v8/build.sh
             sed -i 's/apt-get -y install build-essential ninja-build python/apt-get -y install build-essential ninja-build python3/' embedded-v8/build.sh
             sed -i 's/python3 gn\/build\/gen.py/PYTHONPATH=\/usr\/lib\/python3\/dist-packages python3 gn\/build\/gen.py/' embedded-v8/build.sh
             sed -i 's/from collections import Mapping/from collections.abc import Mapping/' embedded-v8/third_party/jinja2/tests.py
-            sed -i 's/-Wno-int-in-bool-context -O3/-Wno-int-in-bool-context -Wno-sign-compare -O3/' embedded-v8/build.sh
         fi
         cd ..
         sudo cp -r /tmp/camotics "$CHROOT_DIR/opt/camotics"
@@ -243,7 +243,32 @@ build_camotics() {
             echo 'Setting up V8...'
             cd embedded-v8
             sed -i 's/sudo //g' build.sh
-            ./build.sh 2>&1 || echo 'V8 build failed but continuing...'
+            
+            # Clear V8 build cache to force clean rebuild
+            echo 'Clearing V8 build cache...'
+            rm -rf out/
+            rm -rf build/
+            rm -rf .gclient_entries
+            
+            # Add diagnostic logging and proper error handling
+            echo 'Starting V8 build with enhanced logging...'
+            if ! ./build.sh 2>&1 | tee v8_build.log; then
+                echo 'V8 build failed! Examining build log...'
+                echo '=== Last 50 lines of V8 build log ==='
+                tail -50 v8_build.log
+                echo '=== Searching for specific errors ==='
+                grep -i 'error\|failed\|fatal' v8_build.log | tail -10
+                echo 'V8 build failed - stopping build process'
+                exit 1
+            fi
+            
+            # Verify V8 build success
+            if [[ ! -f lib/libv8_monolith.a ]]; then
+                echo 'V8 build appears to have failed - libv8_monolith.a not found'
+                ls -la lib/ || echo 'lib directory not found'
+                exit 1
+            fi
+            
             export V8_HOME=\$PWD
             cd ..
 
