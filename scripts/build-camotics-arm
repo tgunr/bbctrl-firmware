@@ -214,6 +214,14 @@ build_camotics() {
         # Clone embedded-v8 as well
         if [[ ! -d embedded-v8 ]]; then
             git clone --depth=1 https://github.com/CauldronDevelopmentLLC/embedded-v8
+            # Fix V8 pointer compression configuration and python usage
+            sed -i 's/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true v8_enable_pointer_compression=true/' embedded-v8/build.sh
+            sed -i 's/python gn\/build\/gen.py/python3 gn\/build\/gen.py/' embedded-v8/build.sh
+            sed -i 's/apt-get update/apt-get update\napt-get -y install python3\nln -sf \/usr\/bin\/python3 \/usr\/bin\/python/' embedded-v8/build.sh
+            sed -i 's/apt-get -y install build-essential ninja-build python/apt-get -y install build-essential ninja-build python3/' embedded-v8/build.sh
+            sed -i 's/python3 gn\/build\/gen.py/PYTHONPATH=\/usr\/lib\/python3\/dist-packages python3 gn\/build\/gen.py/' embedded-v8/build.sh
+            sed -i 's/from collections import Mapping/from collections.abc import Mapping/' embedded-v8/third_party/jinja2/tests.py
+            sed -i 's/-Wno-int-in-bool-context -O3/-Wno-int-in-bool-context -Wno-sign-compare -O3/' embedded-v8/build.sh
         fi
         cd ..
         sudo cp -r /tmp/camotics "$CHROOT_DIR/opt/camotics"
