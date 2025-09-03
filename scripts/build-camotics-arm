@@ -143,7 +143,7 @@ setup_chroot() {
             liblz4-dev \
             libzstd-dev \
             libsqlite3-dev \
-            libexpat1-dev \I told him to pay attention to it. Happy belated birthday, Dave. I want a week off, two weeks off. My brother's birthday is on the 26th. 61, 70, 64. I don't have one to do that. I don't hear it sizzling, Dave, so that screw might have... That's just my other thermal device. I got a thermal gun, but I think I need a 9-volt battery for this. It's 110, Dave. 110. It's going down, ain't it? Yeah, me and Caleb are going to get that stuff in there tomorrow, Dave. Thank you. Yeah, he's got everything covered up. Okay. Your wood and stuff that I told him.
+            libexpat1-dev \
             libevent-dev \
             libre2-dev \
             libsnappy-dev \
