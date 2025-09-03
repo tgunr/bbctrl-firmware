@@ -53,3 +53,4 @@ updiprog/
 .devcontainer
 .build-info
 rpipdi-source.tar.gz
+CAMOTICS_DEBUG_SUMMARY.md
