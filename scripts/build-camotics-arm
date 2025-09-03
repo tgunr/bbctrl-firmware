@@ -185,11 +185,17 @@ build_cbang() {
             sudo rm -rf "$CHROOT_DIR/opt/cbang/build"
         fi
 
+        log_info "Building cbang with scons..."
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/cbang
             export TARGET_ARCH=aarch64
-            scons -j$CPUS
-        "
+            echo 'Starting cbang build...'
+            scons -j$CPUS 2>&1
+            echo 'cbang build completed with exit code: $?'
+        " || {
+            log_error "cbang build failed"
+            exit 1
+        }
     fi
 
     log_info "cbang build complete."
