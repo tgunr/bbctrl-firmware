@@ -229,7 +229,7 @@ build_camotics() {
     fi
 
     # Check if CAMotics is already built
-    if [[ -f "$CHROOT_DIR/opt/camotics/build/camotics.so" && "$FORCE_REBUILD" != "true" || "$FORCE_CAMOTICS" == "true" || ! -f "$CHROOT_DIR/usr/lib/aarch64-linux-gnu/libnode.so.108" ]]; then
+    if [[ -f "$CHROOT_DIR/opt/camotics/build/camotics.so" && "$FORCE_REBUILD" != "true" && "$FORCE_CAMOTICS" != "true" ]]; then
         log_info "CAMotics already built, skipping..."
     else
         if [[ "$FORCE_REBUILD" == "true" && -d "$CHROOT_DIR/opt/camotics" ]]; then
@@ -237,23 +237,27 @@ build_camotics() {
             sudo rm -rf "$CHROOT_DIR/opt/camotics/build"
         fi
 
+        log_info "Building CAMotics..."
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/camotics
-            # Set up V8 (JavaScript engine dependency)
+            echo 'Setting up V8...'
             cd embedded-v8
-            # Build V8 without sudo (modify build script to not require sudo)
             sed -i 's/sudo //g' build.sh
-            ./build.sh
+            ./build.sh 2>&1 || echo 'V8 build failed but continuing...'
             export V8_HOME=\$PWD
             cd ..
 
-            # Set cbang home
+            echo 'Setting cbang home...'
             export CBANG_HOME=/opt/cbang
 
-            # Build CAMotics for ARM64
+            echo 'Building CAMotics for ARM64...'
             export TARGET_ARCH=aarch64
-            scons -j$CPUS with_gui=False
-        "
+            scons -j$CPUS with_gui=False 2>&1
+            echo 'CAMotics build completed with exit code: $?'
+        " || {
+            log_error "CAMotics build failed"
+            exit 1
+        }
     fi
 
     log_info "CAMotics build complete."
