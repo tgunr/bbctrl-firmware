@@ -34,19 +34,54 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Check if CAMotics needs rebuilding based on source file dates
+check_camotics_build_needed() {
+    local binary="$CHROOT_DIR/opt/camotics/build/camotics.so"
+    local source_dir="$CHROOT_DIR/opt/camotics"
+
+    if [ ! -f "$binary" ]; then
+        log_info "CAMotics binary doesn't exist, build needed"
+        return 0  # Need build
+    fi
+
+    # Find the newest source file
+    local newest_source=$(find "$source_dir" -type f \( -name "*.cpp" -o -name "*.h" -o -name "SConstruct" -o -name "*.py" \) -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)
+
+    if [ -z "$newest_source" ]; then
+        log_warn "No source files found to check timestamps"
+        return 1  # Don't rebuild if we can't check
+    fi
+
+    local binary_time=$(stat -c %Y "$binary" 2>/dev/null)
+    local source_time=$(stat -c %Y "$newest_source" 2>/dev/null)
+
+    if [ -z "$binary_time" ] || [ -z "$source_time" ]; then
+        log_warn "Could not get timestamps for comparison"
+        return 1  # Don't rebuild if we can't check
+    fi
+
+    if [ "$source_time" -gt "$binary_time" ]; then
+        log_info "Source files newer than binary (source: $(date -d @$source_time), binary: $(date -d @$binary_time))"
+        return 0  # Need rebuild
+    else
+        log_info "CAMotics binary is up to date with sources"
+        return 1  # No rebuild needed
+    fi
+}
+
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
 
     # Check if running as root (needed for chroot setup)
-    if [[ $EUID -eq 0 ]]; then
+    if [ "$EUID" -eq 0 ]; then
         log_error "This script should not be run as root. It will use sudo when needed."
         exit 1
     fi
 
     # Check for required packages
-    local required_packages=("qemu-user-static" "binfmt-support" "debootstrap")
-    for pkg in "${required_packages[@]}"; do
+    required_packages="qemu-user-static binfmt-support debootstrap"
+    for pkg in $required_packages; do
         if ! dpkg -l | grep -q "^ii  $pkg"; then
             log_error "Required package '$pkg' is not installed. Please install it first:"
             log_error "  sudo apt-get install $pkg"
@@ -67,37 +102,37 @@ check_prerequisites() {
 setup_chroot() {
     log_info "Setting up ARM chroot environment..."
 
-    if [[ -d "$CHROOT_DIR" ]]; then
-        if [[ "$FORCE_REBUILD" == "true" ]]; then
+    if [ -d "$CHROOT_DIR" ]; then
+        if [ "$FORCE_REBUILD" = "true" ]; then
             log_warn "Force rebuild requested. Removing existing chroot..."
             sudo rm -rf "$CHROOT_DIR"
         else
             log_info "Chroot directory $CHROOT_DIR already exists. Checking if it's properly set up..."
 
             # Comprehensive check of chroot environment
-            local chroot_ok=true
+            chroot_ok=true
 
             # Check for essential files
-            if [[ ! -f "$CHROOT_DIR/bin/bash" ]]; then
+            if [ ! -f "$CHROOT_DIR/bin/bash" ]; then
                 log_warn "Missing /bin/bash in chroot"
                 chroot_ok=false
             fi
 
-            if [[ ! -f "$CHROOT_DIR/usr/bin/qemu-aarch64-static" ]]; then
+            if [ ! -f "$CHROOT_DIR/usr/bin/qemu-aarch64-static" ]; then
                 log_warn "Missing qemu-aarch64-static in chroot"
                 chroot_ok=false
             fi
 
             # Check if it's the right architecture (ARM64)
-            if [[ -f "$CHROOT_DIR/bin/ls" ]]; then
-                local arch=$(file "$CHROOT_DIR/bin/ls" 2>/dev/null | grep -o "ARM\|x86" | head -1)
-                if [[ "$arch" == "x86" ]]; then
+            if [ -f "$CHROOT_DIR/bin/ls" ]; then
+                arch=$(file "$CHROOT_DIR/bin/ls" 2>/dev/null | grep -o "ARM\|x86" | head -1)
+                if [ "$arch" = "x86" ]; then
                     log_warn "Chroot appears to be x86 architecture, but we need ARM64"
                     chroot_ok=false
                 fi
             fi
 
-            if [[ "$chroot_ok" == "true" ]]; then
+            if [ "$chroot_ok" = "true" ]; then
                 log_info "Chroot environment appears to be properly set up. Skipping recreation."
                 log_info "Use --force to recreate the chroot environment if needed."
                 return 0
@@ -167,9 +202,9 @@ build_cbang() {
     log_info "Building cbang..."
 
     # Clone cbang on host if not already present
-    if [[ ! -d "$CHROOT_DIR/opt/cbang" ]]; then
+    if [ ! -d "$CHROOT_DIR/opt/cbang" ]; then
         log_info "Cloning cbang on host..."
-        if [[ -d "/tmp/cbang" ]]; then rm -rf /tmp/cbang; fi
+        if [ -d "/tmp/cbang" ]; then rm -rf /tmp/cbang; fi
         git clone --depth=1 $CBANG_REPO /tmp/cbang
         sudo mkdir -p "$CHROOT_DIR/opt"
         sudo cp -r /tmp/cbang "$CHROOT_DIR/opt/cbang"
@@ -177,7 +212,7 @@ build_cbang() {
     fi
 
     # Check if cbang is already built
-    if [[ -f "$CHROOT_DIR/opt/cbang/lib/libcbang.a" && "$FORCE_REBUILD" != "true" ]]; then
+    if [ -f "$CHROOT_DIR/opt/cbang/lib/libcbang.a" ] && [ "$FORCE_REBUILD" != "true" ]; then
         log_info "cbang already built, skipping..."
     else
         if [[ "$FORCE_REBUILD" == "true" && -d "$CHROOT_DIR/opt/cbang" ]]; then
@@ -206,19 +241,20 @@ build_camotics() {
     log_info "Building CAMotics..."
 
     # Clone CAMotics on host if not already present
-    if [[ ! -d "$CHROOT_DIR/opt/camotics" ]]; then
+    if [ ! -d "$CHROOT_DIR/opt/camotics" ]; then
         log_info "Cloning CAMotics on host..."
-        if [[ -d "/tmp/camotics" ]]; then rm -rf /tmp/camotics; fi
+        if [ -d "/tmp/camotics" ]; then rm -rf /tmp/camotics; fi
         git clone --depth=1 $CAMOTICS_REPO /tmp/camotics
         cd /tmp/camotics
         # Clone embedded-v8 as well
-        if [[ ! -d embedded-v8 ]]; then
+        if [ ! -d embedded-v8 ]; then
             git clone --depth=1 https://github.com/CauldronDevelopmentLLC/embedded-v8
             # Fix V8 pointer compression configuration and python usage
-            # Fix V8 build configuration with proper compiler flags
-            sed -i 's/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true/v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true v8_enable_pointer_compression=true treat_warnings_as_errors=false/' embedded-v8/build.sh
+            # Fix V8 build configuration with proper compiler flags - DISABLE pointer compression to match system V8
+            sed -i 's/v8_enable_pointer_compression=true/v8_enable_pointer_compression=false/g' embedded-v8/build.sh
             sed -i 's/python gn\/build\/gen.py/python3 gn\/build\/gen.py/' embedded-v8/build.sh
-            sed -i 's/apt-get update/apt-get update\napt-get -y install python3\nln -sf \/usr\/bin\/python3 \/usr\/bin\/python/' embedded-v8/build.sh
+            sed -i '/apt-get update/a apt-get -y install python3' embedded-v8/build.sh
+            sed -i '/apt-get -y install python3/a ln -sf \/usr\/bin\/python3 \/usr\/bin\/python' embedded-v8/build.sh
             sed -i 's/apt-get -y install build-essential ninja-build python/apt-get -y install build-essential ninja-build python3/' embedded-v8/build.sh
             sed -i 's/python3 gn\/build\/gen.py/PYTHONPATH=\/usr\/lib\/python3\/dist-packages python3 gn\/build\/gen.py/' embedded-v8/build.sh
             sed -i 's/from collections import Mapping/from collections.abc import Mapping/' embedded-v8/third_party/jinja2/tests.py
@@ -228,11 +264,16 @@ build_camotics() {
         rm -rf /tmp/camotics
     fi
 
-    # Check if CAMotics is already built
-    if [[ -f "$CHROOT_DIR/opt/camotics/build/camotics.so" && "$FORCE_REBUILD" != "true" && "$FORCE_CAMOTICS" != "true" ]]; then
-        log_info "CAMotics already built, skipping..."
+    # Check if CAMotics needs rebuilding
+    if [ "$FORCE_REBUILD" != "true" ] && [ "$FORCE_CAMOTICS" != "true" ]; then
+        if check_camotics_build_needed; then
+            log_info "CAMotics rebuild needed..."
+        else
+            log_info "CAMotics already built and up to date, skipping..."
+            return 0
+        fi
     else
-        if [[ "$FORCE_REBUILD" == "true" && -d "$CHROOT_DIR/opt/camotics" ]]; then
+        if [[ ("$FORCE_REBUILD" == "true" || "$FORCE_CAMOTICS" == "true") && -d "$CHROOT_DIR/opt/camotics" ]]; then
             log_warn "Force rebuild: cleaning CAMotics build..."
             sudo rm -rf "$CHROOT_DIR/opt/camotics/build"
         fi
@@ -251,7 +292,8 @@ build_camotics() {
             ln -sf /usr/lib/aarch64-linux-gnu/libv8_libplatform.so system-v8/lib/libv8_libplatform.so
             
             # Copy V8 headers to the expected location
-            cp -r /usr/include/nodejs/deps/v8/include/v8/* system-v8/include/v8/ 2>/dev/null || echo 'Headers already exist'
+            mkdir -p system-v8/include/
+            cp -r /usr/include/nodejs/deps/v8/include/* system-v8/include/ 2>/dev/null || echo 'Headers already exist'
             
             # Set V8 environment variables for cbang detection
             export V8_HOME=\$PWD/system-v8
@@ -370,13 +412,17 @@ while [[ $# -gt 0 ]]; do
             echo "Build CAMotics for ARM architecture using chroot and qemu"
             echo ""
             echo "Options:"
-            echo "  -f, --force    Force recreation of chroot environment"
-            echo "  -h, --help     Show this help message"
+            echo "  -f, --force        Force recreation of chroot environment"
+            echo "  --force-camotics   Force rebuild of CAMotics (cleans build cache)"
+            echo "  -h, --help         Show this help message"
             echo ""
             echo "The script will preserve the existing chroot environment unless:"
             echo "  - It's incomplete or corrupted"
             echo "  - Wrong architecture is detected"
             echo "  - --force flag is used"
+            echo ""
+            echo "CAMotics will be rebuilt automatically if source files are newer than the binary,"
+            echo "unless --force-camotics is used to skip this check."
             exit 0
             ;;
         *)
