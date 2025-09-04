@@ -46,7 +46,6 @@ Tools/gcode_debugger/.mcphost.yml
 external_macros/
 test*.py
 docker/Dockerfile.backup
-.kilocode/mcp.json
 bbkbd/
 rpipdi/
 updiprog/
