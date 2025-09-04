@@ -55,7 +55,7 @@
 1. **AVR Firmware**: Compiled with AVR-GCC, programmed via avrdude
 2. **Python Package**: Built with setuptools, installed via pip
 3. **Web Assets**: JavaScript bundled with Browserify, templates compiled with Pug
-4. **Cross-compilation**: CAMotics built for ARM architecture using chroot
+4. **Cross-compilation**: CAMotics built for ARM architecture using chroot (Note: V8 pointer compression mismatch issue may recur)
 
 ### Development Workflow
 - **Makefile**: Central build orchestration

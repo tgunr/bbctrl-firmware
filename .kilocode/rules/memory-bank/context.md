@@ -10,6 +10,7 @@
 - Support for various VFD spindle controllers
 - Enhanced web interface with 3D visualization
 - Improved camera integration and LCD support
+- CAMotics ARM build fixes for V8 pointer compression (diagnosed and fixed)
 
 ## Next Steps
 - Continue development of new features
