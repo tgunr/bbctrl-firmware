@@ -240,44 +240,39 @@ build_camotics() {
         log_info "Building CAMotics..."
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/camotics
-            echo 'Setting up V8...'
-            cd embedded-v8
-            sed -i 's/sudo //g' build.sh
+            echo 'Using system V8 library instead of embedded V8...'
             
-            # Clear V8 build cache to force clean rebuild
-            echo 'Clearing V8 build cache...'
-            rm -rf out/
-            rm -rf build/
-            rm -rf .gclient_entries
+            # Create a fake V8_HOME structure pointing to system V8
+            mkdir -p system-v8/lib system-v8/include
             
-            # Add diagnostic logging and proper error handling
-            echo 'Starting V8 build with enhanced logging...'
-            if ! ./build.sh 2>&1 | tee v8_build.log; then
-                echo 'V8 build failed! Examining build log...'
-                echo '=== Last 50 lines of V8 build log ==='
-                tail -50 v8_build.log
-                echo '=== Searching for specific errors ==='
-                grep -i 'error\|failed\|fatal' v8_build.log | tail -10
-                echo 'V8 build failed - stopping build process'
-                exit 1
-            fi
+            # Link to system V8 libraries
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8.so system-v8/lib/libv8.so
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8_libbase.so system-v8/lib/libv8_libbase.so
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8_libplatform.so system-v8/lib/libv8_libplatform.so
             
-            # Verify V8 build success
-            if [[ ! -f lib/libv8_monolith.a ]]; then
-                echo 'V8 build appears to have failed - libv8_monolith.a not found'
-                ls -la lib/ || echo 'lib directory not found'
-                exit 1
-            fi
+            # Copy V8 headers to the expected location
+            cp -r /usr/include/nodejs/deps/v8/include/v8/* system-v8/include/v8/ 2>/dev/null || echo 'Headers already exist'
             
-            export V8_HOME=\$PWD
-            cd ..
+            # Set V8 environment variables for cbang detection
+            export V8_HOME=\$PWD/system-v8
+            export V8_INCLUDE=\$V8_HOME/include
+
+            echo 'V8_HOME set to: '\$V8_HOME
+            echo 'V8_INCLUDE set to: '\$V8_INCLUDE
+            echo 'V8 libraries available:'
+            ls -la \$V8_HOME/lib/
+            echo 'V8 headers available:'
+            ls -la \$V8_HOME/include/v8/ | head -5
 
             echo 'Setting cbang home...'
             export CBANG_HOME=/opt/cbang
 
             echo 'Building CAMotics for ARM64...'
             export TARGET_ARCH=aarch64
-            scons -j$CPUS with_gui=False 2>&1
+            export CFLAGS=\"-I\$V8_HOME/include \$CFLAGS\"
+            export CXXFLAGS=\"-I\$V8_HOME/include \$CXXFLAGS\"
+            export LDFLAGS=\"-L\$V8_HOME/lib \$LDFLAGS\"
+            V8_HOME=\$V8_HOME V8_INCLUDE=\$V8_INCLUDE CBANG_HOME=/opt/cbang TARGET_ARCH=aarch64 scons -j$CPUS with_gui=False 2>&1
             echo 'CAMotics build completed with exit code: $?'
         " || {
             log_error "CAMotics build failed"
