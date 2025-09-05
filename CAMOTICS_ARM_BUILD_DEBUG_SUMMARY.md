@@ -61,7 +61,7 @@ This document summarizes the systematic debugging and resolution of a CAMotics A
 - Fixed python3 compatibility by replacing `python` with `python3`
 - Added pointer compression configuration flags:
   ```bash
-  gn gen out/arm64.release --args='target_cpu="arm64" v8_enable_pointer_compression=true'
+  ./gn/out/gn gen --args='is_debug=false use_custom_libcxx=false is_clang=false v8_enable_i18n_support=false v8_monolithic=true v8_use_external_startup_data=false disable_libfuzzer=true use_aura=false use_dbus=false use_ozone=false use_sysroot=false use_udev=false use_x11=false use_gio=false use_glib=false v8_has_valgrind=true v8_enable_pointer_compression=false' out
   ```
 - Enhanced build logging for failure diagnosis
 
