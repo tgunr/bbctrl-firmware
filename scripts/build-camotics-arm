@@ -250,8 +250,7 @@ build_camotics() {
         if [ ! -d embedded-v8 ]; then
             git clone --depth=1 https://github.com/CauldronDevelopmentLLC/embedded-v8
             # Fix V8 pointer compression configuration and python usage
-            # Fix V8 build configuration with proper compiler flags - DISABLE pointer compression to match system V8
-            sed -i 's/v8_enable_pointer_compression=true/v8_enable_pointer_compression=false/g' embedded-v8/build.sh
+            # Note: Pointer compression is now directly set in embedded-v8/build.sh
             sed -i 's/python gn\/build\/gen.py/python3 gn\/build\/gen.py/' embedded-v8/build.sh
             sed -i '/apt-get update/a apt-get -y install python3' embedded-v8/build.sh
             sed -i '/apt-get -y install python3/a ln -sf \/usr\/bin\/python3 \/usr\/bin\/python' embedded-v8/build.sh
@@ -282,19 +281,19 @@ build_camotics() {
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/camotics
             echo 'Using system V8 library instead of embedded V8...'
-            
+
             # Create a fake V8_HOME structure pointing to system V8
             mkdir -p system-v8/lib system-v8/include
-            
+
             # Link to system V8 libraries
             ln -sf /usr/lib/aarch64-linux-gnu/libv8.so system-v8/lib/libv8.so
             ln -sf /usr/lib/aarch64-linux-gnu/libv8_libbase.so system-v8/lib/libv8_libbase.so
             ln -sf /usr/lib/aarch64-linux-gnu/libv8_libplatform.so system-v8/lib/libv8_libplatform.so
-            
+
             # Copy V8 headers to the expected location
             mkdir -p system-v8/include/
             cp -r /usr/include/nodejs/deps/v8/include/* system-v8/include/ 2>/dev/null || echo 'Headers already exist'
-            
+
             # Set V8 environment variables for cbang detection
             export V8_HOME=\$PWD/system-v8
             export V8_INCLUDE=\$V8_HOME/include
@@ -305,6 +304,30 @@ build_camotics() {
             ls -la \$V8_HOME/lib/
             echo 'V8 headers available:'
             ls -la \$V8_HOME/include/v8/ | head -5
+
+            # DEBUG: Check system V8 pointer compression configuration
+            echo '=== DEBUG: Checking system V8 configuration ==='
+            if [ -f /usr/lib/aarch64-linux-gnu/libv8.so ]; then
+                echo 'System V8 library found at: /usr/lib/aarch64-linux-gnu/libv8.so'
+                # Try to check V8 version and configuration
+                strings /usr/lib/aarch64-linux-gnu/libv8.so | grep -i 'pointer.*compression' || echo 'No pointer compression strings found in system V8'
+                strings /usr/lib/aarch64-linux-gnu/libv8.so | grep -i 'v8.*version' | head -3 || echo 'No version strings found'
+            else
+                echo 'System V8 library not found at expected location'
+                find /usr -name 'libv8.so*' 2>/dev/null | head -5
+            fi
+
+            # DEBUG: Check embedded V8 build configuration
+            if [ -d embedded-v8 ]; then
+                echo '=== DEBUG: Checking embedded V8 build configuration ==='
+                if [ -f embedded-v8/build.sh ]; then
+                    echo 'Embedded V8 build.sh exists'
+                    grep -n 'v8_enable_pointer_compression' embedded-v8/build.sh || echo 'No pointer compression setting found in build.sh'
+                    grep -n 'gn gen' embedded-v8/build.sh || echo 'No GN gen command found'
+                else
+                    echo 'Embedded V8 build.sh not found'
+                fi
+            fi
 
             echo 'Setting cbang home...'
             export CBANG_HOME=/opt/cbang
