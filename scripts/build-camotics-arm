@@ -10,7 +10,7 @@ echo "=== Building CAMotics for ARM ==="
 # Configuration
 CHROOT_DIR="/opt/arm-chroot"
 CBANG_REPO="https://github.com/CauldronDevelopmentLLC/cbang"
-CAMOTICS_REPO="https://github.com/CauldronDevelopmentLLC/camotics"
+CAMOTICS_REPO="https://github.com/tgunr/CAMotics"
 CPUS=$(grep -c ^processor /proc/cpuinfo)
 FORCE_REBUILD=false
 FORCE_CAMOTICS=false
