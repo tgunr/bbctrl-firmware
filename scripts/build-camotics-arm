@@ -72,13 +72,13 @@ check_camotics_build_needed() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-
+    
     # Check if running as root (needed for chroot setup)
     if [ "$EUID" -eq 0 ]; then
         log_error "This script should not be run as root. It will use sudo when needed."
         exit 1
     fi
-
+    
     # Check for required packages
     required_packages="qemu-user-static binfmt-support debootstrap"
     for pkg in $required_packages; do
@@ -288,11 +288,12 @@ build_camotics() {
             return 0
         fi
     else
-        if [[ ("$FORCE_REBUILD" == "true" || "$FORCE_CAMOTICS" == "true") && -d "$CHROOT_DIR/opt/camotics" ]]; then
-            log_warn "Force rebuild: cleaning CAMotics build..."
-            sudo rm -rf "$CHROOT_DIR/opt/camotics/build"
+        if [ "$FORCE_REBUILD" = "true" ] || [ "$FORCE_CAMOTICS" = "true" ]; then
+            if [ -d "$CHROOT_DIR/opt/camotics" ]; then
+                log_warn "Force rebuild: cleaning CAMotics build..."
+                sudo rm -rf "$CHROOT_DIR/opt/camotics/build"
+            fi
         fi
-
         log_info "Building CAMotics..."
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/camotics
