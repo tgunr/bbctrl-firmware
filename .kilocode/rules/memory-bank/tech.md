@@ -55,7 +55,9 @@
 1. **AVR Firmware**: Compiled with AVR-GCC, programmed via avrdude
 2. **Python Package**: Built with setuptools, installed via pip
 3. **Web Assets**: JavaScript bundled with Browserify, templates compiled with Pug
-4. **Cross-compilation**: CAMotics built for ARM architecture using chroot (Note: V8 pointer compression mismatch issue may recur)
+4. **Cross-compilation**: CAMotics built for ARM architecture using chroot
+   - **V8 Configuration**: cbang configured to match system V8 pointer compression settings
+   - **Repository Sync**: Build script uses https://github.com/tgunr/CAMotics
 
 ### Development Workflow
 - **Makefile**: Central build orchestration
@@ -84,8 +86,9 @@
 
 ### Runtime Dependencies
 - **Python Packages**: tornado, sockjs-tornado, pyserial, pyudev, smbus2
-- **System Libraries**: Linux kernel modules, device drivers
+- **System Libraries**: Linux kernel modules, device drivers, Node.js/V8
 - **Hardware**: Raspberry Pi, AVR microcontroller, stepper drivers
+- **V8 Configuration**: System V8 must have pointer compression disabled to match CAMotics build
 
 ### Build Dependencies
 - **AVR Tools**: gcc-avr, binutils-avr, avr-libc
