@@ -133,9 +133,36 @@ beta-pkg: pkg
 arm-bin: $(CAMOTICS_OUTPUT)
 	mkdir -p bin
 	cp $(CAMOTICS_OUTPUT) bin/
-	@if [ -f bbkbd/bbkbd ]; then cp bbkbd/bbkbd bin/; else echo "Warning: bbkbd/bbkbd not found, skipping"; fi
-	@if [ -f updiprog/updiprog ]; then cp updiprog/updiprog bin/; else echo "Warning: updiprog/updiprog not found, skipping"; fi
-	@if [ -f rpipdi/rpipdi ]; then cp rpipdi/rpipdi bin/; else echo "Warning: rpipdi/rpipdi not found, skipping"; fi
+	@echo "Checking for bbkbd..."
+	@if [ ! -d bbkbd ]; then \
+		echo "Cloning bbkbd..."; \
+		git clone --depth=1 https://github.com/buildbotics/bbkbd.git; \
+	fi
+	@if [ ! -f bbkbd/bbkbd ]; then \
+		echo "Building bbkbd..."; \
+		$(MAKE) -C bbkbd; \
+	fi
+	@cp bbkbd/bbkbd bin/
+	@echo "Checking for updiprog..."
+	@if [ ! -d updiprog ]; then \
+		echo "Cloning updiprog..."; \
+		git clone --depth=1 https://github.com/buildbotics/updiprog.git; \
+	fi
+	@if [ ! -f updiprog/updiprog ]; then \
+		echo "Building updiprog..."; \
+		$(MAKE) -C updiprog; \
+	fi
+	@cp updiprog/updiprog bin/
+	@echo "Checking for rpipdi..."
+	@if [ ! -d rpipdi ]; then \
+		echo "Cloning rpipdi..."; \
+		git clone --depth=1 https://github.com/buildbotics/rpipdi.git; \
+	fi
+	@if [ ! -f rpipdi/rpipdi ]; then \
+		echo "Building rpipdi..."; \
+		$(MAKE) -C rpipdi; \
+	fi
+	@cp rpipdi/rpipdi bin/
 
 %.img.xz: %.img
 	xz -T $(CPUS) $<
