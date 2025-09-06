@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/sh -ex
 
 # Build CAMotics for ARM architecture using chroot and qemu
 # This script creates an ARM build environment and compiles CAMotics for Raspberry Pi
@@ -38,28 +38,28 @@ log_error() {
 check_camotics_build_needed() {
     local binary="$CHROOT_DIR/opt/camotics/build/camotics.so"
     local source_dir="$CHROOT_DIR/opt/camotics"
-
+    
     if [ ! -f "$binary" ]; then
         log_info "CAMotics binary doesn't exist, build needed"
         return 0  # Need build
     fi
-
+    
     # Find the newest source file
     local newest_source=$(find "$source_dir" -type f \( -name "*.cpp" -o -name "*.h" -o -name "SConstruct" -o -name "*.py" \) -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)
-
+    
     if [ -z "$newest_source" ]; then
         log_warn "No source files found to check timestamps"
         return 1  # Don't rebuild if we can't check
     fi
-
+    
     local binary_time=$(stat -c %Y "$binary" 2>/dev/null)
     local source_time=$(stat -c %Y "$newest_source" 2>/dev/null)
-
+    
     if [ -z "$binary_time" ] || [ -z "$source_time" ]; then
         log_warn "Could not get timestamps for comparison"
         return 1  # Don't rebuild if we can't check
     fi
-
+    
     if [ "$source_time" -gt "$binary_time" ]; then
         log_info "Source files newer than binary (source: $(date -d @$source_time), binary: $(date -d @$binary_time))"
         return 0  # Need rebuild
