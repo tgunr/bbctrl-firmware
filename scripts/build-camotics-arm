@@ -416,13 +416,13 @@ copy_binary() {
 # Main execution
 main() {
     log_info "Starting CAMotics ARM build process..."
-
+    
     check_prerequisites
     setup_chroot
     build_cbang
     build_camotics
     copy_binary
-
+    
     log_info "CAMotics ARM build completed successfully!"
     log_info "The chroot environment is preserved for future builds."
     log_info "Use --force to recreate the chroot if needed."
@@ -432,20 +432,20 @@ main() {
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-
+        
         --force-cbang)
             FORCE_CBANG=true
             shift
-            ;;
+        ;;
         --force-camotics)
             FORCE_CAMOTICS=true
             shift
-            ;;
+        ;;
         --force|-f)
             FORCE_REBUILD=true
             log_warn "Force rebuild enabled - will recreate chroot environment"
             shift
-            ;;
+        ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -464,12 +464,12 @@ while [[ $# -gt 0 ]]; do
             echo "CAMotics will be rebuilt automatically if source files are newer than the binary,"
             echo "unless --force-camotics is used to skip this check."
             exit 0
-            ;;
+        ;;
         *)
             log_error "Unknown option: $1"
             echo "Use --help for usage information"
             exit 1
-            ;;
+        ;;
     esac
 done
 
