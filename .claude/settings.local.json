@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill:*)",
+      "Bash(export:*)",
+      "Bash(ollama serve:*)",
+      "Bash(brew services stop:*)",
+      "Bash(find:*)",
+      "Bash(brew services start:*)"
+    ],
+    "deny": []
+  }
+}

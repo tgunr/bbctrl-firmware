@@ -1,0 +1,188 @@
+; Minimal XY-Probe - Forum Style with Deep Contact Safety
+(LOGOPEN,log.txt)
+o<globals> call
+
+; Preamble
+G17 G21 G40 G49 G54 G80 G90 G94
+; G17 use XY plane, G21 inch mode, G40 cancel diameter compensation,
+; G49 cancel length offset, G54 use coordinate system 1,
+; G80 cancel canned cycles, G90 absolute distance mode, G94 feed/minute mode.
+
+M70                           ; Save machine state
+G21                           ; Metric units
+M5                            ; Stop spindle
+G90                           ; Absolute mode
+M0 (MSG, WARNING: You did check I/O pin shows when contacted, right?  Position tool above probe block.  Press Cycle Start to probe)
+
+; record start position
+#<probe_startX> = #<_x>
+#<probe_startY> = #<_y>
+#<probe_startZ> = #<_z>
+(LOG, startX: #<probe_startX> startY: #<probe_startY> block: #<_probe_block_b>)
+
+G92 X0Y0Z0                    ; Set all positions to 0
+
+o<probe_z> call 
+#<safeZ> = #<_inset_height> + 10
+#<probe_z> = [#<_inset_height> / 2]
+
+; Determine bit radius by probing X edges
+; Raise to safe height
+G90 
+G0 Z#<safeZ>    
+; determine how far right to move
+#<move_to_right> = [#<probe_startX> + #<_probe_block_b>]
+G0 X#<move_to_right>
+
+; Move to probing height
+G0 Z[#<probe_z>]     
+
+; how far to probe left
+#<probe_left> = [#<_x> - #<move_to_right> - 1]
+(DEBUG, probe_left: #<probe_left>)
+
+; probe left fast
+G38.2 X[#<probe_left>] F#<_fast_probe>  
+
+; back off
+G0 X[#<_x> + 3]
+
+; probe slow
+G38.2 X[#<_x> - 4] F#<_slow_probe>  
+#<right_side> = #<_x>           
+
+#<x_right> = #[5201 + #5220 * 20]  ; X work offset (no tool length)
+#<y_right> = #[5202 + #5220 * 20]  ; Y work offset (no tool length)
+
+(LOG, right side X: #<right_side> x_right: #<x_right>)
+
+; back off
+G0 X[#<_x> + 1]
+
+; Retract 
+G0 Z[#<safeZ>] 
+
+; determine left side of block, bit would be just inside left side
+#<move_left> = [#<right_side> - #<_x_outer>]
+
+; compensate for bit size up 1.5" 38.1mm + 1.9mm
+#<probe_disance> = 40
+#<move_left> = [#<move_left> - #<probe_disance>]
+(LOG, Moving left to X: [-#<move_left>])
+
+M2
+; move to left side of block
+G91 ; use relative
+G0 X-[#<move_left>]
+
+; Move to probing height
+G90 ; back to absolute
+
+; lower probe
+G0 Z#<probe_z>
+
+; probe to the right
+#<probe_right> = [#<probe_disance> + 2]
+(LOG, Probe right to X: #<probe_right>)
+G38.2 X#<probe_right> F#<_fast_probe>
+
+; back off
+G0 [#<_x> - 2]
+
+; probe slow
+G38.2 X3 F#<_slow_probe>
+#<left_side> = #<_x>
+
+; back off
+G0 [#<_x> - 2]
+
+; Retract 
+G0 Z[#<safeZ>] 
+
+; compute bit diameter
+#<measured_span> = [#<right_side> - #<left_side>]  ; Total distance between probe points
+#<tool_diameter> = [#<measured_span> - #<_x_outer>]  ; Subtract known block width to get tool diameter
+#<tool_radius> = [#<tool_diameter> / 2]
+#<half_block> = [#<_x_outer> / 2]
+#<probe_block_center> = [#<left_side> + #<tool_radius> + #<half_block>]
+(LOG, Block width: #1=[#<_x_outer>]mm; Measured span: #2=[#<measured_span>]mm; Tool dia: #3=[#<tool_diameter>]mm; Center X: #4=[#<probe_block_center>]mm)
+(LOG,  R: #<right_side> - L: #<left_side> - O: #<_x_outer_dim> D: #<diameter>)
+M0 (DEBUG, The tool diamiter is = [#<tool_diameter>]mm)
+M2
+
+; move down to half of probe block height
+#<probe_z> = [#<_probe_block_z> / 2]
+(LOG, Moving down to Z: #<probe_z>)
+G0 Z#<probe_z>
+
+; probe left to find block edge
+(LOG, Probing left to find block edge F: #<_fast_probe>)
+G38.2 X[#<probe_startX> - 10] F#<_fast_probe>
+
+(LOG, Probe fast contact X at: #<_x>)
+; back off a bit to right
+G0 X[#<_x> + 3]
+
+(LOG, Slow Probing F: #<_slow_probe>)
+; probe left back to block
+G38.2 X[#<probe_startX>] F#<_slow_probe>
+(LOG, Probe slow contact at #<_x>)
+#<newX> = #<_x>
+
+; X set, now do Y
+
+; Retract
+G0 X[#<_x> + 3]
+G0 Z[#<_probe_block_z> + 10]
+
+; move to Y start
+G0 X#<probe_startX> Y[#<probe_startY> + #<_probe_block_b> - 1]
+
+; move down halfway
+G0 Z[#<_probe_block_z> - [#<_probe_block_z> / 2]]
+
+; probe down to block
+G38.2 Y[#<probe_startY>] F#<_fast_probe>
+(LOG, Probe fast contact Y at: #<_y>)
+
+; back off a bit to right
+G0 Y[#<_y> + 3]
+
+; probe back to block
+G38.2 Y[#<probe_startY>] F#<_slow_probe>
+#<newY> = #<_y>
+(LOG, Probe slow contact Y at #<_y>)
+
+; Log all relevant values for verification
+(LOG, --- Probe Results ---)
+(LOG, Probed X position - right edge: #<newX>)
+(LOG, Probed Y position - front edge: #<newY>)
+(LOG, Probe block X dimension: #<_x_inner>)
+(LOG, Probe block Y dimension: #<_y_inner>)
+
+; Calculate the work offset to position the bit's edge at the stock corner
+; Current position is at the probe block's edges (right and back)
+; Need to move left by probe block X and down by probe block Y
+#<stock_edge_x> = #<newX> - #<_x_inner>  ; Move left by probe block width
+#<stock_edge_y> = #<newY> - #<_y_inner>  ; Move down by probe block depth
+(LOG, Calculated stock edge X - left: #<stock_edge_x>)
+(LOG, Calculated stock edge Y - bottom: #<stock_edge_y>)
+
+; Set work offset to position the bit's edge at the stock edge
+G10 L20 P1 X#<stock_edge_x> Y#<stock_edge_y>
+
+; Log the final position and retract Z
+(LOG, Work offset set - X: #<stock_edge_x> Y: #<stock_edge_y>)
+(LOG, Retracting Z to starting position)
+
+;G92 X[#<newX> - #<_x_inner>]
+;G92 Y[#<_y> - #<_y_inner>]
+
+(PROBEOPEN probe_xy.txt) 
+; retract
+G0 Y[#<_y> + 3]
+G0 Z[#<_probe_block_z> * 2]
+
+(PROBECLOSE)
+
+M30

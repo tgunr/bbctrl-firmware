@@ -1,0 +1,92 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+
+# Help message
+show_help() {
+    echo "Buildbotics Development Tools"
+    echo
+    echo "Usage: dev COMMAND [args]"
+    echo
+    echo "Commands:"
+    echo "  up              Start development environment"
+    echo "  down            Stop development environment"
+    echo "  test            Run tests"
+    echo "  lint            Run linting"
+    echo "  debug-py        Start Python debugger"
+    echo "  debug-js        Start Node.js debugger"
+    echo "  shell           Open shell in development container"
+    echo "  logs            Show development container logs"
+    echo "  clean           Clean build artifacts"
+    echo "  build          Build the project"
+    echo "  help            Show this help message"
+}
+
+# Command implementations
+cmd_up() {
+    docker-compose up -d bbctrl-dev
+}
+
+cmd_down() {
+    docker-compose down
+}
+
+cmd_test() {
+    docker-compose run --rm bbctrl-dev pytest src/py/bbctrl/test
+}
+
+cmd_lint() {
+    docker-compose run --rm bbctrl-dev bash -c "\
+        flake8 src/py/bbctrl && \
+        black --check src/py/bbctrl && \
+        mypy src/py/bbctrl && \
+        ./node_modules/.bin/jshint --config jshint.json src/js/*.js"
+}
+
+cmd_debug_py() {
+    docker-compose run --rm -p 5678:5678 bbctrl-dev python3 -m debugpy --listen 0.0.0.0:5678 "$@"
+}
+
+cmd_debug_js() {
+    docker-compose run --rm -p 9229:9229 bbctrl-dev node --inspect=0.0.0.0:9229 "$@"
+}
+
+cmd_shell() {
+    docker-compose run --rm bbctrl-dev bash
+}
+
+cmd_logs() {
+    docker-compose logs -f bbctrl-dev
+}
+
+cmd_clean() {
+    docker-compose down -v
+    rm -rf build dist node_modules
+}
+
+cmd_build() {
+    docker-compose run --rm bbctrl-dev make "$@"
+}
+
+# Command router
+case "$1" in
+    up|down|test|lint|shell|logs|clean|build)
+        cmd_$1 "${@:2}"
+        ;;
+    debug-py)
+        cmd_debug_py "${@:2}"
+        ;;
+    debug-js)
+        cmd_debug_js "${@:2}"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $1"
+        show_help
+        exit 1
+        ;;
+esac

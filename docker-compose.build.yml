@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # Production build service
+  bbctrl-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/build
+      - build-cache:/build/build
+    environment:
+      - NODE_ENV=production
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    user: "builder"
+    command: make
+
+volumes:
+  build-cache:

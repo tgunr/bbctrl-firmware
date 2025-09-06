@@ -1,0 +1,13 @@
+; Minimal Z-Probe - Forum Style with Deep Contact Safety
+(LOGOPEN,log.txt)
+o<globals> call
+
+(MSG, WARNING: You did check I/O pin shows when contacted, right?  Position tool above probe block.  Press Cycle Start to probe)
+M0
+
+o<probe_z> call
+
+
+(LOGCLOSE)
+
+M30

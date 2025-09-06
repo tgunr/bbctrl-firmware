@@ -461,24 +461,35 @@ class SockJSConnection(ClientConnection, sockjs.tornado.SockJSConnection):
         ClientConnection.__init__(self, session.server.app)
         sockjs.tornado.SockJSConnection.__init__(self, session)
 
-
     def send(self, msg):
         try:
             sockjs.tornado.SockJSConnection.send(self, msg)
-        except:
-            self.close()
-
+        except Exception as e:
+            self.app.log.get('Web').error('Error sending message: %s' % str(e))
 
     def on_open(self, info):
         cookie = info.get_cookie('bbctrl-client-id')
-        if cookie is None: self.send(dict(sid = '')) # Trigger client reset
+        if cookie is None: 
+            self.send(dict(sid = ''))  # Trigger client reset
         else:
             id = cookie.value
-
             ip = info.ip
             if 'X-Real-IP' in info.headers: ip = info.headers['X-Real-IP']
-            self.app.get_ctrl(id).log.get('Web').info('Connection from %s' % ip)
+            
+            ctrl = self.app.get_ctrl(id)
+            ctrl.log.get('Web').info('Connection from %s' % ip)
+            
+            # Reset timeout
+            ctrl.clear_timeout()
+            
+            # Call parent on_open
             super().on_open(id)
+
+    def on_close(self):
+        try:
+            super().on_close()
+        except Exception as e:
+            self.app.log.get('Web').error('Error closing connection: %s' % str(e))
 
 
 class StaticFileHandler(tornado.web.StaticFileHandler):
@@ -578,15 +589,20 @@ class Web(tornado.web.Application):
         return util.get_resource('http/images/%s.jpg' % name)
 
 
-    def opened(self, ctrl): ctrl.clear_timeout()
+    def opened(self, ctrl):
+        ctrl.clear_timeout()
+        ctrl.log.get('Web').info('Connection opened')
 
 
     def closed(self, ctrl):
-        # Time out clients in demo mode
-        if self.args.demo: ctrl.set_timeout(self._reap_ctrl, ctrl)
+        # Don't time out clients in demo mode
+        if not self.args.demo:
+            ctrl.set_timeout(self._reap_ctrl, ctrl)
+        ctrl.log.get('Web').info('Connection closed')
 
 
     def _reap_ctrl(self, ctrl):
+        ctrl.log.get('Web').info('Reaping controller')
         ctrl.close()
         del self.ctrls[ctrl.id]
 
@@ -597,8 +613,11 @@ class Web(tornado.web.Application):
         if not id in self.ctrls:
             ctrl = Ctrl(self.args, self.ioloop, self.udevev, id)
             self.ctrls[id] = ctrl
+            ctrl.log.get('Web').info('Created new controller')
 
-        else: ctrl = self.ctrls[id]
+        else: 
+            ctrl = self.ctrls[id]
+            ctrl.log.get('Web').info('Using existing controller')
 
         return ctrl
 

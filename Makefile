@@ -20,7 +20,7 @@ BUILD_SCRIPT     := scripts/build-camotics-arm
 CAMOTICS_BUILD_DIR := camotics/build
 CAMOTICS_OUTPUT  := $(CAMOTICS_BUILD_DIR)/camotics.so
 
-RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\\#* \*~ .\\\#\*
+RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\#* \*~ .\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
 
@@ -213,7 +213,7 @@ tidy:
 	rm -f $(shell find "$(DIR)" -name \*~)
 
 clean: tidy
-	rm -rf build html dist
+	rm -rf build html dist bin bbkbd updiprog rpipdi cbang camotics
 	@for SUB in $(SUBPROJECTS); do \
 	  $(MAKE) -C $$SUB clean; \
 	done

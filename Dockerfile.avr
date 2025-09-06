@@ -1,0 +1,27 @@
+# Use Debian as base image
+FROM debian:bullseye-slim
+
+# Set working directory
+WORKDIR /build
+
+# Install AVR toolchain and build dependencies
+RUN echo 'APT::Get::Assume-Yes "true";' > /etc/apt/apt.conf.d/90assumeyes && \
+    echo 'APT::Get::force-yes "true";' >> /etc/apt/apt.conf.d/90assumeyes && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    make \
+    gcc-avr \
+    avr-libc \
+    binutils-avr \
+    avrdude \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy source code
+COPY . .
+
+# Set build command
+CMD ["make", "-j$(nproc)", "-C", "src/avr"]

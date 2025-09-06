@@ -1,0 +1,113 @@
+# Use Debian 11 (Bullseye) as base image with explicit version tag for reproducibility
+FROM debian:11.9-slim@sha256:fbaacd55d14bd0ae0c0441c2347217da77ad83c517054623357d1f9d07f79f5e
+
+# Add non-root user for development
+RUN groupadd -r developer && useradd -r -g developer developer
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    NODE_ENV=development \
+    PATH="/venv/bin:$PATH"
+
+# Install build requirements and development tools with no-recommends
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build tools
+    build-essential \
+    git \
+    wget \
+    binfmt-support \
+    qemu \
+    parted \
+    gcc-avr \
+    avr-libc \
+    avrdude \
+    pylint3 \
+    python3 \
+    python3-tornado \
+    curl \
+    unzip \
+    python3-setuptools \
+    gcc-arm-linux-gnueabihf \
+    bc \
+    scons \
+    libssl-dev \
+    python3-dev \
+    libx11-dev \
+    # Development tools
+    gdb \
+    valgrind \
+    strace \
+    vim \
+    tmux \
+    python3-pip \
+    python3-venv \
+    inotify-tools \
+    netcat-openbsd \
+    # Clean up
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/archives/*
+
+# Install Node.js LTS and development tools
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/archives/* \
+    && npm install -g npm@latest nodemon \
+    && npm cache clean --force
+
+# Create Python virtual environment and install development tools
+RUN python3 -m venv /venv \
+    && /venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /venv/bin/pip install --no-cache-dir \
+        pytest \
+        pytest-cov \
+        black \
+        flake8 \
+        mypy \
+        debugpy \
+        ipython \
+        pylint \
+    && chown -R developer:developer /venv
+
+# Create build directory and set permissions
+WORKDIR /build
+RUN chown -R developer:developer /build
+
+# Copy package files first to leverage Docker cache
+COPY --chown=developer:developer package.json package-lock.json ./
+
+# Install npm dependencies including development packages
+RUN npm ci
+
+# Set up QEMU for ARM emulation
+RUN update-binfmts --enable qemu-arm
+
+# Set up sudo for developer user (without password)
+RUN echo "developer ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/developer \
+    && chmod 0440 /etc/sudoers.d/developer
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /build/build/http \
+    && chown -R developer:developer /build
+
+# Set health check for development container
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD pgrep -f "make watch" || exit 1
+
+# Set labels for better maintainability
+LABEL maintainer="Your Name <your.email@example.com>" \
+      description="Development environment for Bbctrl controller firmware" \
+      version="1.0.0"
+
+# Switch to non-root user
+USER developer
+
+# Default command - can be overridden
+CMD ["make", "watch"]
+
+# Set working directory
+WORKDIR /build

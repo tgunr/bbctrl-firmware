@@ -1,6 +1,10 @@
 {
   "name": "bbctrl",
+<<<<<<< HEAD
   "version": "2.1.0.dev8",
+=======
+  "version": "2.1.0",
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
   "homepage": "http://buildbotics.com/",
   "repository": "https://github.com/buildbotics/bbctrl-firmware",
   "license": "CERN-OHL-S v2",

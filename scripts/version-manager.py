@@ -29,7 +29,11 @@
 """
 Version Management Utility for Buildbotics CNC Controller
 
+<<<<<<< HEAD
 This script helps manage PEP 440 versioning with pre-release support.
+=======
+This script helps manage semantic versioning with pre-release support.
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 It provides commands to bump versions, validate version strings, and
 manage the development workflow.
 
@@ -64,7 +68,11 @@ except ImportError:
 
 
 class VersionManager:
+<<<<<<< HEAD
     """Manages PEP 440 version information across project files."""
+=======
+    """Manages version information across project files."""
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
@@ -226,6 +234,7 @@ class VersionManager:
 
 def main():
     parser = argparse.ArgumentParser(
+<<<<<<< HEAD
         description='PEP 440 Version Management Utility for Buildbotics CNC Controller',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
@@ -236,6 +245,18 @@ Examples:
    python version-manager.py validate "2.2.0.dev1"      # Validate version
    python version-manager.py set "2.2.0a1"              # Set specific version
    python version-manager.py info                       # Show current version info
+=======
+        description='Version Management Utility for Buildbotics CNC Controller',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python version-manager.py current                    # Show current version
+  python version-manager.py bump minor                 # Bump minor version
+  python version-manager.py next-stage                 # Move to next stage
+  python version-manager.py validate "2.2.0-dev.1"     # Validate version
+  python version-manager.py set "2.2.0-alpha.1"        # Set specific version
+  python version-manager.py info                       # Show current version info
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         """
     )
 

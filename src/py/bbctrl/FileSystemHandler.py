@@ -71,31 +71,47 @@ class FileSystemHandler(RequestHandler):
 
     @gen.coroutine
     def get(self, path):
-        path = clean_path(path)
-        if path == '': path = 'Home'
-        realpath = self.get_fs().realpath(path)
+        try:
+            self.get_log('FS').info('FileSystemHandler.get() called with path: %s' % repr(path))
+            path = clean_path(path)
+            if path == '': path = 'Home'
+            self.get_log('FS').info('Cleaned path: %s' % repr(path))
+            
+            fs = self.get_fs()
+            self.get_log('FS').info('Got filesystem instance: %s' % repr(fs))
+            
+            realpath = fs.realpath(path)
+            self.get_log('FS').info('Real path resolved to: %s' % repr(realpath))
 
-        if not os.path.exists(realpath): raise HTTPError(404, 'File not found')
-        elif os.path.isdir(realpath):
-            files = []
+            if not os.path.exists(realpath):
+                self.get_log('FS').error('Real path does not exist: %s' % repr(realpath))
+                raise HTTPError(404, 'File not found')
+            elif os.path.isdir(realpath):
+                self.get_log('FS').info('Path is directory, listing contents')
+                files = []
 
-            if os.path.exists(realpath):
-                for name in os.listdir(realpath):
-                    s = os.stat(realpath + '/' + name)
+                if os.path.exists(realpath):
+                    for name in os.listdir(realpath):
+                        s = os.stat(realpath + '/' + name)
 
-                    d = dict(name = name)
-                    d['created']  = util.timestamp_to_iso8601(s.st_ctime)
-                    d['modified'] = util.timestamp_to_iso8601(s.st_mtime)
-                    d['size']     = s.st_size
-                    d['dir']      = stat.S_ISDIR(s.st_mode)
+                        d = dict(name = name)
+                        d['created']  = util.timestamp_to_iso8601(s.st_ctime)
+                        d['modified'] = util.timestamp_to_iso8601(s.st_mtime)
+                        d['size']     = s.st_size
+                        d['dir']      = stat.S_ISDIR(s.st_mode)
 
-                    files.append(d)
+                        files.append(d)
 
-            d = dict(path = path, files = files)
+                d = dict(path = path, files = files)
+                self.get_log('FS').info('Returning directory listing with %d files' % len(files))
 
-            self.set_header('Content-Type', 'application/json')
-            self.write(json.dumps(d, separators = (',', ':')))
+                self.set_header('Content-Type', 'application/json')
+                self.write(json.dumps(d, separators = (',', ':')))
 
-        else:
-            with open(realpath.encode('utf8'), 'rb') as f:
-                self.write(f.read())
+            else:
+                self.get_log('FS').info('Path is file, reading contents')
+                with open(realpath.encode('utf8'), 'rb') as f:
+                    self.write(f.read())
+        except Exception as e:
+            self.get_log('FS').exception('Exception in FileSystemHandler.get(): %s' % str(e))
+            raise

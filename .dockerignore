@@ -1,0 +1,28 @@
+# Ignore large binary files and unnecessary directories
+*.img
+*.bin
+*.iso
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Version control
+.git
+.gitignore
+
+# Build and temporary directories
+build/
+dist/
+node_modules/
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Specific large files in this project
+image/
+Upload/

@@ -1,10 +1,60 @@
+<<<<<<< HEAD
 recursive-include src/py/bbctrl/http *
 include package.json README.md scripts/install.sh
 include src/avr/bbctrl-avr-firmware.hex
 include src/pwr/bbctrl-pwr-firmware.hex
 include scripts/buildbotics.gc
 include bin/camotics.so
+=======
+# Comprehensive file inclusion for bbctrl-2.0.4 tarball
+
+# Source directories
+recursive-include src *
+recursive-include scripts *
+recursive-include docs *
+recursive-include bin *
+
+# Specific top-level files
+include CHANGELOG.md
+include CODE_TAG
+include jshint.json
+include Makefile
+include pug-opts.js
+include package.json
+include README.md
+include LICENSE
+include setup.py
+include .dev-version
+
+# Firmware files
+include src/avr/bbctrl-avr-firmware.hex
+include src/pwr/bbctrl-pwr-firmware.hex
+
+# Binary files
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 include bin/bbkbd
-include bin/updiprog
+include bin/camotics.so
 include bin/rpipdi
+<<<<<<< HEAD
 exclude .gitignore
+=======
+include bin/updiprog
+
+# Template libraries
+recursive-include src/py/bbctrl/tpl_lib *
+
+# Specific image files
+include src/py/bbctrl/http/images/DB15_breakout_box.png
+include src/py/bbctrl/http/images/DB25_breakout_box.png
+include src/py/bbctrl/http/images/DB25-M2_breakout.png
+include src/py/bbctrl/http/images/isometric.png
+
+# Exclude version control and temporary files
+global-exclude .git*
+global-exclude .DS_Store
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.egg-info
+global-exclude *~
+global-exclude *.swp
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903

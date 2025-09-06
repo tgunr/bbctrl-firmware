@@ -143,7 +143,8 @@ class Planner():
     def _update(self, update):
         if 'id' in update:
             id = update['id']
-            self.planner.set_active(id) # Release planner commands
+            if self.planner is not None:
+                self.planner.set_active(id) # Release planner commands
             self.cmdq.release(id)       # Synchronize planner variables
 
 
@@ -336,6 +337,7 @@ class Planner():
     def reset(self, stop = True):
         self._end_program('Program reset', True)
         if stop: self.ctrl.mach.stop()
+<<<<<<< HEAD
 
         if not CAMOTICS_AVAILABLE:
             raise ImportError("Camotics module is required for motion planning but could not be imported. "
@@ -345,12 +347,26 @@ class Planner():
         self.planner.set_resolver(self._get_var_cb)
         # TODO logger is global and will not work correctly in demo mode
         camotics.set_logger(self._log_cb, 1, 'LinePlanner:3')
+=======
+        self.planner = None
+        try:
+            import camotics
+            self.planner = camotics.Planner()
+        except (ImportError, NameError):
+            self.log.error('CAMotics not available')
+        if self.planner is not None:
+            self.planner.set_resolver(self._get_var_cb)
+            # TODO logger is global and will not work correctly in demo mode
+            camotics.set_logger(self._log_cb, 1, 'LinePlanner:3')
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         self.cmdq.clear()
         self.reset_times()
         self.ctrl.state.reset()
 
 
-    def result(self, result): self.planner.synchronize(result)
+    def result(self, result): 
+        if self.planner is not None:
+            self.planner.synchronize(result)
 
 
     def _end_program(self, msg = None, end_all = False):
@@ -371,18 +387,24 @@ class Planner():
         self.log.info('Start: ' + path, time = True)
         self.ctrl.state.set('active_program', path)
         # Sync position
-        self.planner.set_position(self.ctrl.state.get_position())
+        if self.planner is not None:
+            self.planner.set_position(self.ctrl.state.get_position())
 
         config = self.get_config(with_start, with_limits)
-        if mdi is not None: self.planner.load_string(mdi, config)
-        else: self.planner.load(self.ctrl.fs.realpath(path), config)
+        if mdi is not None:
+            if self.planner is not None:
+                self.planner.load_string(mdi, config)
+        else:
+            if self.planner is not None:
+                self.planner.load(self.ctrl.fs.realpath(path), config)
 
         self.reset_times()
 
 
     def stop(self):
         try:
-            self.planner.stop()
+            if self.planner is not None:
+                self.planner.stop()
             self.cmdq.clear()
             self._end_program('Program stop', True)
 
@@ -401,7 +423,8 @@ class Planner():
             self.cmdq.clear()
             self.cmdq.release(id)
             self._plan_time_restart()
-            self.planner.restart(id, position)
+            if self.planner is not None:
+                self.planner.restart(id, position)
 
         except:
             self.log.exception()
@@ -410,9 +433,10 @@ class Planner():
 
     def next(self):
         try:
-            while self.planner.has_more():
-                cmd = self._encode(self.planner.next())
-                if cmd is not None: return cmd
+            if self.planner is not None:
+                while self.planner.has_more():
+                    cmd = self._encode(self.planner.next())
+                    if cmd is not None: return cmd
 
         except RuntimeError as e:
             # Pass on the planner message

@@ -31,6 +31,7 @@ from typing import Optional, Tuple, List, Union
 
 class Version:
     """
+<<<<<<< HEAD
     Version class following PEP 440 specification.
 
     Format: MAJOR.MINOR.PATCH[PRERELEASE][+BUILD]
@@ -46,6 +47,22 @@ class Version:
         r'((?:a|b|rc)\d+|'  # PRERELEASE: aN, bN, rcN
         r'\.dev\d+)?'  # or .devN
         r'(\+([a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?))?'  # [+BUILD]
+=======
+    Semantic Version class following SemVer specification with custom pre-release identifiers.
+
+    Format: MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
+    Pre-release identifiers: dev, alpha, beta, rc
+    """
+
+    # Valid pre-release identifiers in order of precedence (lowest to highest)
+    PRERELEASE_IDENTIFIERS = ['dev', 'alpha', 'beta', 'rc']
+
+    # Regex pattern for SemVer validation
+    SEMVER_PATTERN = re.compile(
+        r'^(\d+)\.(\d+)\.(\d+)'  # MAJOR.MINOR.PATCH
+        r'(-([a-zA-Z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)*))?'  # [-PRERELEASE]
+        r'(\+([a-zA-Z0-9](?:\.[a-zA-Z0-9]+)*))?'  # [+BUILD]
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         r'$'
     )
 
@@ -54,7 +71,11 @@ class Version:
         Initialize Version object from version string.
 
         Args:
+<<<<<<< HEAD
             version_string: Version string in PEP 440 format
+=======
+            version_string: Version string in SemVer format
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
         Raises:
             ValueError: If version string is invalid
@@ -68,15 +89,22 @@ class Version:
 
     def _parse(self, version_string: str) -> None:
         """Parse version string and validate format."""
+<<<<<<< HEAD
         match = self.PEP440_PATTERN.match(version_string)
         if not match:
             raise ValueError(f"Invalid PEP 440 version format: {version_string}")
+=======
+        match = self.SEMVER_PATTERN.match(version_string)
+        if not match:
+            raise ValueError(f"Invalid version format: {version_string}")
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
         self.major = int(match.group(1))
         self.minor = int(match.group(2))
         self.patch = int(match.group(3))
 
         if match.group(4):  # Has prerelease
+<<<<<<< HEAD
             prerelease = match.group(4)
             # Convert .dev format to dev format for internal storage
             if prerelease.startswith('.dev'):
@@ -86,10 +114,17 @@ class Version:
 
         if match.group(6):  # Has build metadata
             self.build = match.group(6)
+=======
+            self.prerelease = match.group(5)
+
+        if match.group(6):  # Has build metadata
+            self.build = match.group(7)
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
         self._validate_prerelease()
 
     def _validate_prerelease(self) -> None:
+<<<<<<< HEAD
         """Validate prerelease identifier format according to PEP 440."""
         if not self.prerelease:
             return
@@ -113,6 +148,23 @@ class Version:
                     return
 
         raise ValueError(f"Invalid PEP 440 prerelease identifier: {self.prerelease}")
+=======
+        """Validate prerelease identifier format."""
+        if not self.prerelease:
+            return
+
+        # Check if it starts with valid identifier
+        parts = self.prerelease.split('.')
+        if parts[0] not in self.PRERELEASE_IDENTIFIERS:
+            raise ValueError(f"Invalid prerelease identifier: {parts[0]}")
+
+        # Validate numeric part for known identifiers
+        if len(parts) >= 2:
+            try:
+                int(parts[1])
+            except ValueError:
+                raise ValueError(f"Prerelease identifier must have numeric part: {self.prerelease}")
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     @classmethod
     def parse(cls, version_string: str) -> 'Version':
@@ -121,7 +173,11 @@ class Version:
 
     @classmethod
     def is_valid(cls, version_string: str) -> bool:
+<<<<<<< HEAD
         """Check if version string is valid PEP 440 format."""
+=======
+        """Check if version string is valid SemVer format."""
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         try:
             cls(version_string)
             return True
@@ -129,6 +185,7 @@ class Version:
             return False
 
     def __str__(self) -> str:
+<<<<<<< HEAD
         """Return version string in PEP 440 format."""
         base = f"{self.major}.{self.minor}.{self.patch}"
         if self.prerelease:
@@ -140,6 +197,10 @@ class Version:
         if self.build:
             base += f"+{self.build}"
         return base
+=======
+        """Return version string."""
+        return self.version_string
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     def __repr__(self) -> str:
         """Return string representation."""
@@ -189,12 +250,17 @@ class Version:
         elif not self.prerelease and other.prerelease:
             return 1   # Final release > prerelease
         elif self.prerelease and other.prerelease:
+<<<<<<< HEAD
             prerelease_cmp = self._compare_prerelease(other.prerelease)
             if prerelease_cmp != 0:
                 return prerelease_cmp
 
         # PEP 440 doesn't specify ordering for build metadata
         # Build metadata is ignored for version comparison
+=======
+            return self._compare_prerelease(other.prerelease)
+
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         return 0  # Equal
 
     def _compare_prerelease(self, other_prerelease: str) -> int:
@@ -202,6 +268,7 @@ class Version:
         self_parts = self.prerelease.split('.')
         other_parts = other_prerelease.split('.')
 
+<<<<<<< HEAD
         # Extract base identifier and numeric part for each
         def parse_identifier_part(part: str) -> tuple[str, int]:
             for identifier in self.PRERELEASE_IDENTIFIERS:
@@ -227,11 +294,17 @@ class Version:
             other_idx = self.PRERELEASE_IDENTIFIERS.index(other_base)
         except ValueError:
             other_idx = len(self.PRERELEASE_IDENTIFIERS)  # Unknown identifiers come last
+=======
+        # Compare identifier precedence
+        self_idx = self.PRERELEASE_IDENTIFIERS.index(self_parts[0])
+        other_idx = self.PRERELEASE_IDENTIFIERS.index(other_parts[0])
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
         if self_idx != other_idx:
             return (self_idx > other_idx) - (self_idx < other_idx)
 
         # Same identifier type, compare numeric parts
+<<<<<<< HEAD
         if self_num != other_num:
             return (self_num > other_num) - (self_num < other_num)
 
@@ -241,6 +314,13 @@ class Version:
 
         if self_remaining != other_remaining:
             return (self_remaining > other_remaining) - (self_remaining < other_remaining)
+=======
+        if len(self_parts) >= 2 and len(other_parts) >= 2:
+            self_num = int(self_parts[1])
+            other_num = int(other_parts[1])
+            if self_num != other_num:
+                return (self_num > other_num) - (self_num < other_num)
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
         return 0
 
@@ -254,11 +334,19 @@ class Version:
 
     def is_alpha(self) -> bool:
         """Check if this is an alpha release."""
+<<<<<<< HEAD
         return self.prerelease and self.prerelease.startswith('a')
 
     def is_beta(self) -> bool:
         """Check if this is a beta release."""
         return self.prerelease and self.prerelease.startswith('b')
+=======
+        return self.prerelease and self.prerelease.startswith('alpha')
+
+    def is_beta(self) -> bool:
+        """Check if this is a beta release."""
+        return self.prerelease and self.prerelease.startswith('beta')
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     def is_release_candidate(self) -> bool:
         """Check if this is a release candidate."""
@@ -296,6 +384,7 @@ class Version:
         if not self.prerelease:
             raise ValueError("Cannot bump prerelease on final version")
 
+<<<<<<< HEAD
         # Handle different PEP 440 prerelease formats
         if self.prerelease.startswith('dev'):
             # devN format
@@ -321,6 +410,14 @@ class Version:
 
         # If no known identifier found, append 1
         return Version(f"{self.major}.{self.minor}.{self.patch}{self.prerelease}1")
+=======
+        parts = self.prerelease.split('.')
+        if len(parts) >= 2:
+            num = int(parts[1]) + 1
+            return Version(f"{self.major}.{self.minor}.{self.patch}-{parts[0]}.{num}")
+        else:
+            return Version(f"{self.major}.{self.minor}.{self.patch}-{parts[0]}.1")
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     def to_final(self) -> 'Version':
         """Return final version (without prerelease)."""
@@ -329,26 +426,42 @@ class Version:
     def next_stage(self) -> 'Version':
         """Move to next development stage."""
         if self.is_development():
+<<<<<<< HEAD
             return Version(f"{self.major}.{self.minor}.{self.patch}a1")
         elif self.is_alpha():
             return Version(f"{self.major}.{self.minor}.{self.patch}b1")
         elif self.is_beta():
             return Version(f"{self.major}.{self.minor}.{self.patch}rc1")
+=======
+            return Version(f"{self.major}.{self.minor}.{self.patch}-alpha.1")
+        elif self.is_alpha():
+            return Version(f"{self.major}.{self.minor}.{self.patch}-beta.1")
+        elif self.is_beta():
+            return Version(f"{self.major}.{self.minor}.{self.patch}-rc.1")
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         elif self.is_release_candidate():
             return Version(f"{self.major}.{self.minor}.{self.patch}")
         else:
             # Final version - bump minor for next development cycle
+<<<<<<< HEAD
             return Version(f"{self.major}.{self.minor + 1}.0.dev1")
+=======
+            return Version(f"{self.major}.{self.minor + 1}.0-dev.1")
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 
     def with_build(self, build: str) -> 'Version':
         """Return version with build metadata."""
         base = f"{self.major}.{self.minor}.{self.patch}"
         if self.prerelease:
+<<<<<<< HEAD
             # Format prerelease according to PEP 440
             if self.prerelease.startswith('dev'):
                 base += f".{self.prerelease}"
             else:
                 base += self.prerelease
+=======
+            base += f"-{self.prerelease}"
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
         return Version(f"{base}+{build}")
 
 

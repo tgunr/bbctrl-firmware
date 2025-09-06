@@ -33,9 +33,7 @@ cbang/
 .vscode/
 # Ignore image directory with build artifacts
 image/
-Upload/Projects
 log.txt
-Upload/Macros/Test1.ngc
 src/before_mdi_click.png
 temp.py
 Tools/*.png
@@ -50,6 +48,12 @@ bbkbd/
 rpipdi/
 updiprog/
 .devcontainer
-.build-info
+\.build-info.json
+\.build-info
+\.dev-version
+\.claude
+\.github/
+\.dockerignore
 rpipdi-source.tar.gz
 CAMOTICS_DEBUG_SUMMARY.md
+Upload/

@@ -1,0 +1,4 @@
+; Goto XY origin
+G21 G90                        ; Metric, absolute mode
+F5000
+G1 X0 Y0

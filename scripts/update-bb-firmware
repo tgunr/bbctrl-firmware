@@ -21,6 +21,7 @@ printf "Checking Firmwares\n"
 # Main firmware - Skip if AVR hardware not available
 if [ -e "$AVRFW" ]; then
   printf "\n*** Main Firmware ***\n"
+<<<<<<< HEAD
   printf "Checking AVR hardware availability...\n"
 
   # Test if rpipdi tool is available and executable
@@ -40,6 +41,12 @@ if [ -e "$AVRFW" ]; then
 else
   printf "\n*** Main Firmware ***\n"
   printf "No AVR firmware file found, skipping AVR update\n"
+=======
+  if ! $RPIPDI -c 27 -d 23 -f 0=0xff -f 1=0x00 -f 2=0xbe -f 4=0xff -f 5=0xeb \
+          -x -w $AVRFW; then
+    printf "Warning: AVR firmware update failed, continuing...\n"
+  fi
+>>>>>>> c6a0e630340ffc26531cb57095df7ec9284c1903
 fi
 
 # Reset AVR - Only if GPIO hardware is available
