@@ -88,41 +88,41 @@ check_prerequisites() {
             exit 1
         fi
     done
-
+    
     # Check if binfmt is configured for ARM64
     if ! update-binfmts --display | grep -q "qemu-aarch64"; then
         log_warn "ARM64 binfmt support not configured. Setting it up..."
         sudo update-binfmts --enable qemu-aarch64
     fi
-
+    
     log_info "Prerequisites check passed."
 }
 
 # Setup ARM chroot environment
 setup_chroot() {
     log_info "Setting up ARM chroot environment..."
-
+    
     if [ -d "$CHROOT_DIR" ]; then
         if [ "$FORCE_REBUILD" = "true" ]; then
             log_warn "Force rebuild requested. Removing existing chroot..."
             sudo rm -rf "$CHROOT_DIR"
         else
             log_info "Chroot directory $CHROOT_DIR already exists. Checking if it's properly set up..."
-
+            
             # Comprehensive check of chroot environment
             chroot_ok=true
-
+            
             # Check for essential files
             if [ ! -f "$CHROOT_DIR/bin/bash" ]; then
                 log_warn "Missing /bin/bash in chroot"
                 chroot_ok=false
             fi
-
+            
             if [ ! -f "$CHROOT_DIR/usr/bin/qemu-aarch64-static" ]; then
                 log_warn "Missing qemu-aarch64-static in chroot"
                 chroot_ok=false
             fi
-
+            
             # Check if it's the right architecture (ARM64)
             if [ -f "$CHROOT_DIR/bin/ls" ]; then
                 arch=$(file "$CHROOT_DIR/bin/ls" 2>/dev/null | grep -o "ARM\|x86" | head -1)
@@ -131,7 +131,7 @@ setup_chroot() {
                     chroot_ok=false
                 fi
             fi
-
+            
             if [ "$chroot_ok" = "true" ]; then
                 log_info "Chroot environment appears to be properly set up. Skipping recreation."
                 log_info "Use --force to recreate the chroot environment if needed."
@@ -142,15 +142,15 @@ setup_chroot() {
             fi
         fi
     fi
-
+    
     # Create ARM64 chroot using debootstrap with Debian bookworm (for Python compatibility)
     log_info "Creating ARM64 Debian chroot environment (using bookworm for Python compatibility)..."
     sudo mkdir -p "$CHROOT_DIR"
     sudo debootstrap --foreign --arch=arm64 bookworm "$CHROOT_DIR" http://deb.debian.org/debian/
-
+    
     # Copy qemu-aarch64-static for chroot execution
     sudo cp /usr/bin/qemu-aarch64-static "$CHROOT_DIR/usr/bin/"
-
+    
     # Complete the debootstrap second stage
     log_info "Completing debootstrap second stage..."
     sudo chroot "$CHROOT_DIR" /bin/bash -c "
@@ -186,21 +186,21 @@ setup_chroot() {
                 echo 'Some packages failed to install, but continuing...'
             }
     "
-
+    
     # Set up locale to avoid warnings
     sudo chroot "$CHROOT_DIR" /bin/bash -c "
         echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
         locale-gen en_US.UTF-8
         update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
     "
-
+    
     log_info "ARM chroot environment setup complete."
 }
 
 # Build cbang (dependency for CAMotics)
 build_cbang() {
     log_info "Building cbang..."
-
+    
     # Clone cbang on host if not already present
     if [ ! -d "$CHROOT_DIR/opt/cbang" ]; then
         log_info "Cloning cbang on host..."
