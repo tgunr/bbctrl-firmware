@@ -241,14 +241,14 @@ build_cbang() {
             exit 1
         }
     fi
-
+    
     log_info "cbang build complete."
 }
 
 # Build CAMotics
 build_camotics() {
     log_info "Building CAMotics..."
-
+    
     # Clone CAMotics on host if not already present
     if [ ! -d "$CHROOT_DIR/opt/camotics" ]; then
         log_info "Cloning CAMotics on host..."
@@ -271,14 +271,14 @@ build_camotics() {
         sudo cp -r /tmp/camotics "$CHROOT_DIR/opt/camotics"
         rm -rf /tmp/camotics
     fi
-
+    
     # Apply fixes to CAMotics SConstruct for V8 compatibility
     if [ -f "$CHROOT_DIR/opt/camotics/SConstruct" ]; then
         log_info "Applying CAMotics SConstruct fixes..."
         sudo sed -i "s/if env\['compiler_mode'\] == 'gnu':/if env.get('compiler_mode') == 'gnu':/" "$CHROOT_DIR/opt/camotics/SConstruct"
         sudo sed -i "s/if lib in env\['LIBS'\]:/if lib in env.get('LIBS', []):/" "$CHROOT_DIR/opt/camotics/SConstruct"
     fi
-
+    
     # Check if CAMotics needs rebuilding
     if [ "$FORCE_REBUILD" != "true" ] && [ "$FORCE_CAMOTICS" != "true" ]; then
         if check_camotics_build_needed; then
