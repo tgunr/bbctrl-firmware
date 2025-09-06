@@ -210,7 +210,7 @@ build_cbang() {
         sudo cp -r /tmp/cbang "$CHROOT_DIR/opt/cbang"
         rm -rf /tmp/cbang
     fi
-
+    
     # Apply fixes to cbang configuration files for V8 compatibility
     if [ -f "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py" ]; then
         log_info "Applying cbang configuration fixes..."
@@ -219,7 +219,7 @@ build_cbang() {
         sudo sed -i "s/for lib in env\['LIBS'\]:/for lib in env.get('LIBS', []):/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
         sudo sed -i "s/pats = env\[name\]; pats += env\[name.upper()\]/pats = env.get(name, []); pats += env.get(name.upper(), []);/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
     fi
-
+    
     # Check if cbang is already built
     if [ -f "$CHROOT_DIR/opt/cbang/lib/libcbang.a" ] && [ "$FORCE_REBUILD" != "true" ]; then
         log_info "cbang already built, skipping..."
@@ -228,7 +228,7 @@ build_cbang() {
             log_warn "Force rebuild: cleaning cbang build..."
             sudo rm -rf "$CHROOT_DIR/opt/cbang/build"
         fi
-
+        
         log_info "Building cbang with scons..."
         sudo chroot "$CHROOT_DIR" /bin/bash -c "
             cd /opt/cbang
