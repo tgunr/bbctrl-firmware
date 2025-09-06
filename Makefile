@@ -94,10 +94,10 @@ camotics: $(BUILD_SCRIPT) | $(CAMOTICS_BUILD_DIR)
 	fi
 	@echo "Build script checks passed. Starting build..."
 	@echo "Building CAMotics for ARM architecture..."
-	@if bash $(BUILD_SCRIPT); then \
+	@if /bin/bash $(BUILD_SCRIPT); then \
 		echo "=== CAMotics ARM build completed successfully ==="; \
-		@echo "Verifying output file..."; \
-		@if [ -f $(CAMOTICS_OUTPUT) ]; then \
+		echo "Verifying output file..."; \
+		if [ -f $(CAMOTICS_OUTPUT) ]; then \
 			echo "Output file created: $(CAMOTICS_OUTPUT)"; \
 			file $(CAMOTICS_OUTPUT); \
 		else \
