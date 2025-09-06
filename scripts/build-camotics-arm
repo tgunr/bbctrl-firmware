@@ -291,8 +291,8 @@ build_camotics() {
             ln -sf /usr/lib/aarch64-linux-gnu/libv8_libplatform.so system-v8/lib/libv8_libplatform.so
 
             # Copy V8 headers to the expected location
-            mkdir -p system-v8/include/
-            cp -r /usr/include/nodejs/deps/v8/include/* system-v8/include/ 2>/dev/null || echo 'Headers already exist'
+            mkdir -p system-v8/include/v8/
+            cp -r /usr/include/nodejs/deps/v8/include/* system-v8/include/v8/ 2>/dev/null || echo 'Headers already exist'
 
             # Set V8 environment variables for cbang detection
             export V8_HOME=\$PWD/system-v8

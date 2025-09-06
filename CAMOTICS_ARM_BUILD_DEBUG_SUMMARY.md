@@ -36,9 +36,14 @@ This document summarizes the systematic debugging and resolution of a CAMotics A
 - Library path and include path management critical
 - System vs embedded library conflicts
 
-## Changes Made
+## Issues Discovered and Fixed
 
-### 1. V8 Build Configuration Fixes
+### 1. V8 Header Location Mismatch
+**Problem**: V8 headers were copied to `system-v8/include/` but build system expected them in `system-v8/include/v8/`
+**Impact**: Compilation failed to find V8 headers during build
+**Fix**: Updated build script to copy headers to correct location and created proper directory structure
+
+### 2. V8 Build Configuration Fixes
 **File**: `scripts/build-camotics-arm`
 - Added diagnostic logging for V8 build failures
 - Enhanced error capture with `2>&1 | tee build.log`
@@ -143,8 +148,9 @@ if lib in env.get('LIBS', []):
 - **Build Progress**: Successfully compiled CAMotics for ARM64 with corrected V8 configuration
 - **Binary Status**: Fresh ARM64 binary built today (2025-09-05 11:03)
 - **V8 Problem**: ✅ **RESOLVED** - Pointer compression now disabled to match system V8
+- **Header Issue**: ✅ **FIXED** - V8 headers now in correct location (`system-v8/include/v8/`)
 - **Build System**: ✅ **STABLE** - No more configuration crashes
-- **Issue Status**: V8 pointer compression mismatch has been fixed
+- **Issue Status**: V8 pointer compression mismatch and header issues have been fixed
 
 ## Technical Insights
 
