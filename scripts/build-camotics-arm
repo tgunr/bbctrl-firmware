@@ -1,0 +1,476 @@
+#!/bin/bash -ex
+
+# Build CAMotics for ARM architecture using chroot and qemu
+# This script creates an ARM build environment and compiles CAMotics for Raspberry Pi
+
+set -e
+
+echo "=== Building CAMotics for ARM ==="
+
+# Configuration
+CHROOT_DIR="/opt/arm-chroot"
+CBANG_REPO="https://github.com/CauldronDevelopmentLLC/cbang"
+CAMOTICS_REPO="https://github.com/tgunr/CAMotics"
+CPUS=$(grep -c ^processor /proc/cpuinfo)
+FORCE_REBUILD=false
+FORCE_CAMOTICS=false
+FORCE_CBANG=false
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if CAMotics needs rebuilding based on source file dates
+check_camotics_build_needed() {
+    local binary="$CHROOT_DIR/opt/camotics/build/camotics.so"
+    local source_dir="$CHROOT_DIR/opt/camotics"
+
+    if [ ! -f "$binary" ]; then
+        log_info "CAMotics binary doesn't exist, build needed"
+        return 0  # Need build
+    fi
+
+    # Find the newest source file
+    local newest_source=$(find "$source_dir" -type f \( -name "*.cpp" -o -name "*.h" -o -name "SConstruct" -o -name "*.py" \) -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -1)
+
+    if [ -z "$newest_source" ]; then
+        log_warn "No source files found to check timestamps"
+        return 1  # Don't rebuild if we can't check
+    fi
+
+    local binary_time=$(stat -c %Y "$binary" 2>/dev/null)
+    local source_time=$(stat -c %Y "$newest_source" 2>/dev/null)
+
+    if [ -z "$binary_time" ] || [ -z "$source_time" ]; then
+        log_warn "Could not get timestamps for comparison"
+        return 1  # Don't rebuild if we can't check
+    fi
+
+    if [ "$source_time" -gt "$binary_time" ]; then
+        log_info "Source files newer than binary (source: $(date -d @$source_time), binary: $(date -d @$binary_time))"
+        return 0  # Need rebuild
+    else
+        log_info "CAMotics binary is up to date with sources"
+        return 1  # No rebuild needed
+    fi
+}
+
+# Check prerequisites
+check_prerequisites() {
+    log_info "Checking prerequisites..."
+
+    # Check if running as root (needed for chroot setup)
+    if [ "$EUID" -eq 0 ]; then
+        log_error "This script should not be run as root. It will use sudo when needed."
+        exit 1
+    fi
+
+    # Check for required packages
+    required_packages="qemu-user-static binfmt-support debootstrap"
+    for pkg in $required_packages; do
+        if ! dpkg -l | grep -q "^ii  $pkg"; then
+            log_error "Required package '$pkg' is not installed. Please install it first:"
+            log_error "  sudo apt-get install $pkg"
+            exit 1
+        fi
+    done
+
+    # Check if binfmt is configured for ARM64
+    if ! update-binfmts --display | grep -q "qemu-aarch64"; then
+        log_warn "ARM64 binfmt support not configured. Setting it up..."
+        sudo update-binfmts --enable qemu-aarch64
+    fi
+
+    log_info "Prerequisites check passed."
+}
+
+# Setup ARM chroot environment
+setup_chroot() {
+    log_info "Setting up ARM chroot environment..."
+
+    if [ -d "$CHROOT_DIR" ]; then
+        if [ "$FORCE_REBUILD" = "true" ]; then
+            log_warn "Force rebuild requested. Removing existing chroot..."
+            sudo rm -rf "$CHROOT_DIR"
+        else
+            log_info "Chroot directory $CHROOT_DIR already exists. Checking if it's properly set up..."
+
+            # Comprehensive check of chroot environment
+            chroot_ok=true
+
+            # Check for essential files
+            if [ ! -f "$CHROOT_DIR/bin/bash" ]; then
+                log_warn "Missing /bin/bash in chroot"
+                chroot_ok=false
+            fi
+
+            if [ ! -f "$CHROOT_DIR/usr/bin/qemu-aarch64-static" ]; then
+                log_warn "Missing qemu-aarch64-static in chroot"
+                chroot_ok=false
+            fi
+
+            # Check if it's the right architecture (ARM64)
+            if [ -f "$CHROOT_DIR/bin/ls" ]; then
+                arch=$(file "$CHROOT_DIR/bin/ls" 2>/dev/null | grep -o "ARM\|x86" | head -1)
+                if [ "$arch" = "x86" ]; then
+                    log_warn "Chroot appears to be x86 architecture, but we need ARM64"
+                    chroot_ok=false
+                fi
+            fi
+
+            if [ "$chroot_ok" = "true" ]; then
+                log_info "Chroot environment appears to be properly set up. Skipping recreation."
+                log_info "Use --force to recreate the chroot environment if needed."
+                return 0
+            else
+                log_warn "Chroot environment appears incomplete or incorrect. Recreating..."
+                sudo rm -rf "$CHROOT_DIR"
+            fi
+        fi
+    fi
+
+    # Create ARM64 chroot using debootstrap with Debian bookworm (for Python compatibility)
+    log_info "Creating ARM64 Debian chroot environment (using bookworm for Python compatibility)..."
+    sudo mkdir -p "$CHROOT_DIR"
+    sudo debootstrap --foreign --arch=arm64 bookworm "$CHROOT_DIR" http://deb.debian.org/debian/
+
+    # Copy qemu-aarch64-static for chroot execution
+    sudo cp /usr/bin/qemu-aarch64-static "$CHROOT_DIR/usr/bin/"
+
+    # Complete the debootstrap second stage
+    log_info "Completing debootstrap second stage..."
+    sudo chroot "$CHROOT_DIR" /bin/bash -c "
+        /debootstrap/debootstrap --second-stage
+        apt-get update
+        apt-get install -y --no-install-recommends \
+            build-essential \
+            scons \
+            git \
+            python3 \
+            python3-dev \
+            python3-six \
+            libssl-dev \
+            libqt5websockets5-dev \
+            libqt5opengl5-dev \
+            libglu1-mesa-dev \
+            pkgconf \
+            ca-certificates \
+            sudo \
+            locales \
+            libv8-dev \
+            libnode-dev \
+            libboost-dev \
+            libyaml-dev \
+            liblz4-dev \
+            libzstd-dev \
+            libsqlite3-dev \
+            libexpat1-dev \
+            libevent-dev \
+            libre2-dev \
+            libsnappy-dev \
+            libxxhash-dev || {
+                echo 'Some packages failed to install, but continuing...'
+            }
+    "
+
+    # Set up locale to avoid warnings
+    sudo chroot "$CHROOT_DIR" /bin/bash -c "
+        echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+        locale-gen en_US.UTF-8
+        update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+    "
+
+    log_info "ARM chroot environment setup complete."
+}
+
+# Build cbang (dependency for CAMotics)
+build_cbang() {
+    log_info "Building cbang..."
+
+    # Clone cbang on host if not already present
+    if [ ! -d "$CHROOT_DIR/opt/cbang" ]; then
+        log_info "Cloning cbang on host..."
+        if [ -d "/tmp/cbang" ]; then rm -rf /tmp/cbang; fi
+        git clone --depth=1 $CBANG_REPO /tmp/cbang
+        sudo mkdir -p "$CHROOT_DIR/opt"
+        sudo cp -r /tmp/cbang "$CHROOT_DIR/opt/cbang"
+        rm -rf /tmp/cbang
+    fi
+
+    # Apply fixes to cbang configuration files for V8 compatibility
+    if [ -f "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py" ]; then
+        log_info "Applying cbang configuration fixes..."
+        sudo sed -i "s/num_jobs = int(env\['num_jobs'\])/num_jobs = int(env.get('num_jobs', -1))/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
+        sudo sed -i "s/if env\['compiler_mode'\] != 'gnu': return/if env.get('compiler_mode', '') != 'gnu': return/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
+        sudo sed -i "s/for lib in env\['LIBS'\]:/for lib in env.get('LIBS', []):/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
+        sudo sed -i "s/pats = env\[name\]; pats += env\[name.upper()\]/pats = env.get(name, []); pats += env.get(name.upper(), []);/" "$CHROOT_DIR/opt/cbang/config/compiler/__init__.py"
+    fi
+
+    # Check if cbang is already built
+    if [ -f "$CHROOT_DIR/opt/cbang/lib/libcbang.a" ] && [ "$FORCE_REBUILD" != "true" ]; then
+        log_info "cbang already built, skipping..."
+    else
+        if [[ "$FORCE_REBUILD" == "true" && -d "$CHROOT_DIR/opt/cbang" ]]; then
+            log_warn "Force rebuild: cleaning cbang build..."
+            sudo rm -rf "$CHROOT_DIR/opt/cbang/build"
+        fi
+
+        log_info "Building cbang with scons..."
+        sudo chroot "$CHROOT_DIR" /bin/bash -c "
+            cd /opt/cbang
+            export TARGET_ARCH=aarch64
+            echo 'Starting cbang build...'
+            scons -j$CPUS 2>&1
+            echo 'cbang build completed with exit code: $?'
+        " || {
+            log_error "cbang build failed"
+            exit 1
+        }
+    fi
+
+    log_info "cbang build complete."
+}
+
+# Build CAMotics
+build_camotics() {
+    log_info "Building CAMotics..."
+
+    # Clone CAMotics on host if not already present
+    if [ ! -d "$CHROOT_DIR/opt/camotics" ]; then
+        log_info "Cloning CAMotics on host..."
+        if [ -d "/tmp/camotics" ]; then rm -rf /tmp/camotics; fi
+        git clone --depth=1 $CAMOTICS_REPO /tmp/camotics
+        cd /tmp/camotics
+        # Clone embedded-v8 as well
+        if [ ! -d embedded-v8 ]; then
+            git clone --depth=1 https://github.com/CauldronDevelopmentLLC/embedded-v8
+            # Fix V8 pointer compression configuration and python usage
+            # Note: Pointer compression is now directly set in embedded-v8/build.sh
+            sed -i 's/python gn\/build\/gen.py/python3 gn\/build\/gen.py/' embedded-v8/build.sh
+            sed -i '/apt-get update/a apt-get -y install python3' embedded-v8/build.sh
+            sed -i '/apt-get -y install python3/a ln -sf \/usr\/bin\/python3 \/usr\/bin\/python' embedded-v8/build.sh
+            sed -i 's/apt-get -y install build-essential ninja-build python/apt-get -y install build-essential ninja-build python3/' embedded-v8/build.sh
+            sed -i 's/python3 gn\/build\/gen.py/PYTHONPATH=\/usr\/lib\/python3\/dist-packages python3 gn\/build\/gen.py/' embedded-v8/build.sh
+            sed -i 's/from collections import Mapping/from collections.abc import Mapping/' embedded-v8/third_party/jinja2/tests.py
+        fi
+        cd ..
+        sudo cp -r /tmp/camotics "$CHROOT_DIR/opt/camotics"
+        rm -rf /tmp/camotics
+    fi
+
+    # Apply fixes to CAMotics SConstruct for V8 compatibility
+    if [ -f "$CHROOT_DIR/opt/camotics/SConstruct" ]; then
+        log_info "Applying CAMotics SConstruct fixes..."
+        sudo sed -i "s/if env\['compiler_mode'\] == 'gnu':/if env.get('compiler_mode') == 'gnu':/" "$CHROOT_DIR/opt/camotics/SConstruct"
+        sudo sed -i "s/if lib in env\['LIBS'\]:/if lib in env.get('LIBS', []):/" "$CHROOT_DIR/opt/camotics/SConstruct"
+    fi
+
+    # Check if CAMotics needs rebuilding
+    if [ "$FORCE_REBUILD" != "true" ] && [ "$FORCE_CAMOTICS" != "true" ]; then
+        if check_camotics_build_needed; then
+            log_info "CAMotics rebuild needed..."
+        else
+            log_info "CAMotics already built and up to date, skipping..."
+            return 0
+        fi
+    else
+        if [[ ("$FORCE_REBUILD" == "true" || "$FORCE_CAMOTICS" == "true") && -d "$CHROOT_DIR/opt/camotics" ]]; then
+            log_warn "Force rebuild: cleaning CAMotics build..."
+            sudo rm -rf "$CHROOT_DIR/opt/camotics/build"
+        fi
+
+        log_info "Building CAMotics..."
+        sudo chroot "$CHROOT_DIR" /bin/bash -c "
+            cd /opt/camotics
+            echo 'Using system V8 library instead of embedded V8...'
+
+            # Create a fake V8_HOME structure pointing to system V8
+            mkdir -p system-v8/lib system-v8/include
+
+            # Link to system V8 libraries
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8.so system-v8/lib/libv8.so
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8_libbase.so system-v8/lib/libv8_libbase.so
+            ln -sf /usr/lib/aarch64-linux-gnu/libv8_libplatform.so system-v8/lib/libv8_libplatform.so
+
+            # Copy V8 headers to the expected location
+            mkdir -p system-v8/include/v8/
+            cp -r /usr/include/nodejs/deps/v8/include/* system-v8/include/v8/ 2>/dev/null || echo 'Headers already exist'
+
+            # Set V8 environment variables for cbang detection
+            export V8_HOME=\$PWD/system-v8
+            export V8_INCLUDE=\$V8_HOME/include
+
+            echo 'V8_HOME set to: '\$V8_HOME
+            echo 'V8_INCLUDE set to: '\$V8_INCLUDE
+            echo 'V8 libraries available:'
+            ls -la \$V8_HOME/lib/
+            echo 'V8 headers available:'
+            ls -la \$V8_HOME/include/v8/ | head -5
+
+            # DEBUG: Check system V8 pointer compression configuration
+            echo '=== DEBUG: Checking system V8 configuration ==='
+            if [ -f /usr/lib/aarch64-linux-gnu/libv8.so ]; then
+                echo 'System V8 library found at: /usr/lib/aarch64-linux-gnu/libv8.so'
+                # Try to check V8 version and configuration
+                strings /usr/lib/aarch64-linux-gnu/libv8.so | grep -i 'pointer.*compression' || echo 'No pointer compression strings found in system V8'
+                strings /usr/lib/aarch64-linux-gnu/libv8.so | grep -i 'v8.*version' | head -3 || echo 'No version strings found'
+            else
+                echo 'System V8 library not found at expected location'
+                find /usr -name 'libv8.so*' 2>/dev/null | head -5
+            fi
+
+            # DEBUG: Check embedded V8 build configuration
+            if [ -d embedded-v8 ]; then
+                echo '=== DEBUG: Checking embedded V8 build configuration ==='
+                if [ -f embedded-v8/build.sh ]; then
+                    echo 'Embedded V8 build.sh exists'
+                    grep -n 'v8_enable_pointer_compression' embedded-v8/build.sh || echo 'No pointer compression setting found in build.sh'
+                    grep -n 'gn gen' embedded-v8/build.sh || echo 'No GN gen command found'
+                else
+                    echo 'Embedded V8 build.sh not found'
+                fi
+            fi
+
+            echo 'Setting cbang home...'
+            export CBANG_HOME=/opt/cbang
+
+            echo 'Building CAMotics for ARM64...'
+            export TARGET_ARCH=aarch64
+            export CFLAGS=\"-I\$V8_HOME/include \$CFLAGS\"
+            export CXXFLAGS=\"-I\$V8_HOME/include \$CXXFLAGS\"
+            export LDFLAGS=\"-L\$V8_HOME/lib \$LDFLAGS\"
+            V8_HOME=\$V8_HOME V8_INCLUDE=\$V8_INCLUDE CBANG_HOME=/opt/cbang TARGET_ARCH=aarch64 scons -j$CPUS with_gui=False 2>&1
+            echo 'CAMotics build completed with exit code: $?'
+        " || {
+            log_error "CAMotics build failed"
+            exit 1
+        }
+    fi
+
+    log_info "CAMotics build complete."
+}
+
+# Copy built binary to project
+copy_binary() {
+    log_info "Copying ARM binary to project..."
+
+    # Check if binary already exists and is ARM64
+    if [[ -f "camotics/build/camotics.so" ]]; then
+        if file camotics/build/camotics.so | grep -q "ARM.*64"; then
+            log_info "ARM64 binary already exists, skipping copy..."
+            file camotics/build/camotics.so
+            return 0
+        fi
+        if file camotics/build/camotics.so | grep -q "x86"; then
+            log_warn "Existing binary is x86, replacing with ARM64 version..."
+        fi
+    fi
+
+    # Ensure build directories exist
+    mkdir -p camotics/build
+    mkdir -p src/py/bbctrl
+    mkdir -p bin
+
+    # Copy the ARM binary
+    log_info "Copying binary from chroot to project directories..."
+    sudo cp "$CHROOT_DIR/opt/camotics/build/camotics.so" camotics/build/ || {
+        log_error "Failed to copy from chroot to camotics/build/"
+        exit 1
+    }
+    cp camotics/build/camotics.so src/py/bbctrl/ || {
+        log_error "Failed to copy to src/py/bbctrl/"
+        exit 1
+    }
+    cp camotics/build/camotics.so bin/ || {
+        log_error "Failed to copy to bin/"
+        exit 1
+    }
+    log_info "Binary copy completed successfully"
+
+    # Verify the binary architecture
+    if file camotics/build/camotics.so | grep -q "ARM"; then
+        log_info "Successfully built ARM version of camotics.so"
+        file camotics/build/camotics.so
+    else
+        log_error "Built binary is not ARM architecture!"
+        file camotics/build/camotics.so
+        exit 1
+    fi
+}
+
+# Main execution
+main() {
+    log_info "Starting CAMotics ARM build process..."
+
+    check_prerequisites
+    setup_chroot
+    build_cbang
+    build_camotics
+    copy_binary
+
+    log_info "CAMotics ARM build completed successfully!"
+    log_info "The chroot environment is preserved for future builds."
+    log_info "Use --force to recreate the chroot if needed."
+    log_info "You can now run 'make pkg' to build the firmware package with ARM camotics."
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+
+        --force-cbang)
+            FORCE_CBANG=true
+            shift
+            ;;
+        --force-camotics)
+            FORCE_CAMOTICS=true
+            shift
+            ;;
+        --force|-f)
+            FORCE_REBUILD=true
+            log_warn "Force rebuild enabled - will recreate chroot environment"
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Build CAMotics for ARM architecture using chroot and qemu"
+            echo ""
+            echo "Options:"
+            echo "  -f, --force        Force recreation of chroot environment"
+            echo "  --force-camotics   Force rebuild of CAMotics (cleans build cache)"
+            echo "  -h, --help         Show this help message"
+            echo ""
+            echo "The script will preserve the existing chroot environment unless:"
+            echo "  - It's incomplete or corrupted"
+            echo "  - Wrong architecture is detected"
+            echo "  - --force flag is used"
+            echo ""
+            echo "CAMotics will be rebuilt automatically if source files are newer than the binary,"
+            echo "unless --force-camotics is used to skip this check."
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Run main function
+main

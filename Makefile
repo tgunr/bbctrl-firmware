@@ -15,6 +15,11 @@ SHARE           := share
 CAMOTICS_MOD    := $(SHARE)/camotics/build/camotics.so
 CAMOTICS_TARGET := src/py/bbctrl/camotics.so
 
+# CAMotics build configuration
+BUILD_SCRIPT     := scripts/build-camotics-arm
+CAMOTICS_BUILD_DIR := camotics/build
+CAMOTICS_OUTPUT  := $(CAMOTICS_BUILD_DIR)/camotics.so
+
 RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\\#* \*~ .\\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
@@ -74,6 +79,40 @@ demo: html resources bbemu
 bbemu:
 	$(MAKE) -C src/avr/emu
 
+# Build CAMotics for ARM architecture
+# This target builds CAMotics using a chroot environment for cross-compilation
+camotics: $(BUILD_SCRIPT) | $(CAMOTICS_BUILD_DIR)
+	@echo "=== Starting CAMotics ARM build ==="
+	@echo "Build script: $(BUILD_SCRIPT)"
+	@echo "Output directory: $(CAMOTICS_BUILD_DIR)"
+	@echo "Target file: $(CAMOTICS_OUTPUT)"
+	@echo "Checking if build script is executable..."
+	@if [ ! -x $(BUILD_SCRIPT) ]; then \
+		echo "ERROR: Build script $(BUILD_SCRIPT) is not executable!"; \
+		echo "Run: chmod +x $(BUILD_SCRIPT)"; \
+		exit 1; \
+	fi
+	@echo "Build script checks passed. Starting build..."
+	@echo "Building CAMotics for ARM architecture..."
+	@if bash $(BUILD_SCRIPT); then \
+		echo "=== CAMotics ARM build completed successfully ==="; \
+		@echo "Verifying output file..."; \
+		@if [ -f $(CAMOTICS_OUTPUT) ]; then \
+			echo "Output file created: $(CAMOTICS_OUTPUT)"; \
+			file $(CAMOTICS_OUTPUT); \
+		else \
+			echo "WARNING: Expected output file $(CAMOTICS_OUTPUT) not found!"; \
+		fi \
+	else \
+		echo "=== CAMotics ARM build failed! ==="; \
+		exit 1; \
+	fi
+
+# Create build directory if it doesn't exist
+$(CAMOTICS_BUILD_DIR):
+	@echo "Creating CAMotics build directory: $@"
+	@mkdir -p $@
+
 pkg: all $(SUBPROJECTS) arm-bin
 	# Create dist directory if it doesn't exist
 	@mkdir -p dist
@@ -91,9 +130,9 @@ beta-pkg: pkg
 	cp dist/$(TARBALL_NAME).tar.bz2 dist/$(BETA_PKG_NAME).tar.bz2
 	echo -n $(VERSION_WITH_BUILD) > dist/latest-beta.txt
 
-arm-bin:
+arm-bin: $(CAMOTICS_OUTPUT)
 	mkdir -p bin
-	cp camotics/build/camotics.so bin/
+	cp $(CAMOTICS_OUTPUT) bin/
 	cp bbkbd/bbkbd bin/
 	cp updiprog/updiprog bin/
 	cp rpipdi/rpipdi bin/
@@ -182,5 +221,5 @@ clean: tidy
 dist-clean: clean
 	rm -rf node_modules
 
-.PHONY: all install clean tidy pkg arm-bin lint pylint jshint
+.PHONY: all install clean tidy pkg arm-bin camotics lint pylint jshint
 .PHONY: html resources dist-clean

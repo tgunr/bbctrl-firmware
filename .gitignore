@@ -46,10 +46,10 @@ Tools/gcode_debugger/.mcphost.yml
 external_macros/
 test*.py
 docker/Dockerfile.backup
-.kilocode/mcp.json
 bbkbd/
 rpipdi/
 updiprog/
 .devcontainer
 .build-info
 rpipdi-source.tar.gz
+CAMOTICS_DEBUG_SUMMARY.md
