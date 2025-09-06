@@ -361,14 +361,14 @@ build_camotics() {
             exit 1
         }
     fi
-
+    
     log_info "CAMotics build complete."
 }
 
 # Copy built binary to project
 copy_binary() {
     log_info "Copying ARM binary to project..."
-
+    
     # Check if binary already exists and is ARM64
     if [[ -f "camotics/build/camotics.so" ]]; then
         if file camotics/build/camotics.so | grep -q "ARM.*64"; then
@@ -380,12 +380,12 @@ copy_binary() {
             log_warn "Existing binary is x86, replacing with ARM64 version..."
         fi
     fi
-
+    
     # Ensure build directories exist
     mkdir -p camotics/build
     mkdir -p src/py/bbctrl
     mkdir -p bin
-
+    
     # Copy the ARM binary
     log_info "Copying binary from chroot to project directories..."
     sudo cp "$CHROOT_DIR/opt/camotics/build/camotics.so" camotics/build/ || {
@@ -401,7 +401,7 @@ copy_binary() {
         exit 1
     }
     log_info "Binary copy completed successfully"
-
+    
     # Verify the binary architecture
     if file camotics/build/camotics.so | grep -q "ARM"; then
         log_info "Successfully built ARM version of camotics.so"
