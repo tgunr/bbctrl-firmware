@@ -133,9 +133,9 @@ beta-pkg: pkg
 arm-bin: $(CAMOTICS_OUTPUT)
 	mkdir -p bin
 	cp $(CAMOTICS_OUTPUT) bin/
-	cp bbkbd/bbkbd bin/
-	cp updiprog/updiprog bin/
-	cp rpipdi/rpipdi bin/
+	@if [ -f bbkbd/bbkbd ]; then cp bbkbd/bbkbd bin/; else echo "Warning: bbkbd/bbkbd not found, skipping"; fi
+	@if [ -f updiprog/updiprog ]; then cp updiprog/updiprog bin/; else echo "Warning: updiprog/updiprog not found, skipping"; fi
+	@if [ -f rpipdi/rpipdi ]; then cp rpipdi/rpipdi bin/; else echo "Warning: rpipdi/rpipdi not found, skipping"; fi
 
 %.img.xz: %.img
 	xz -T $(CPUS) $<
