@@ -27,6 +27,7 @@
 
 import subprocess
 import secrets
+import crypt
 from tornado.web import HTTPError
 
 from .APIHandler import *
@@ -61,19 +62,13 @@ class AuthHandler(APIHandler):
 
     password = self.require_arg('password')
 
-    # Get current password
+    # Get current password hash from shadow
     s = call_get_output(['getent', 'shadow', get_username()])
-    current = s.split(':')[1].split('$')
+    shadow_hash = s.split(':')[1]
 
-    # Check password type
-    if len(current) < 2 or current[1] != '1':
-      raise HTTPError(401, "Password set to unsupported type")
-
-    # Check current password
-    cmd = ['openssl', 'passwd', '-salt', current[2], '-1', password]
-    s = call_get_output(cmd).strip()
-
-    if s.split('$') != current: raise HTTPError(401, 'Wrong password')
+    # Verify password using crypt
+    if crypt.crypt(password, shadow_hash) != shadow_hash:
+      raise HTTPError(401, 'Wrong password')
 
     sid = secrets.token_urlsafe(16)
     self.set_cookie('bbctrl-sid', sid, samesite = 'Strict')
