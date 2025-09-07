@@ -42,6 +42,7 @@ from tornado.concurrent import run_on_executor
 from concurrent.futures import ThreadPoolExecutor
 
 from . import util
+from . import Cmd
 from .Log import *
 from .APIHandler import *
 from .RequestHandler import *
@@ -66,6 +67,21 @@ class RebootHandler(APIHandler):
         self.authorize()
         self.get_ctrl().lcd.goodbye('Rebooting...')
         subprocess.Popen('reboot')
+
+
+class ShutdownHandler(APIHandler):
+    def put(self):
+        self.authorize()
+        self.get_ctrl().lcd.goodbye('Shutting down...')
+        subprocess.Popen(['sudo', '/sbin/halt'])
+
+
+class ResetBBCtrlHandler(APIHandler):
+    def put(self):
+        self.authorize()
+        self.get_ctrl().lcd.goodbye('Resetting BBCtrl...')
+        # Send shutdown command to AVR firmware
+        self.get_ctrl().mach.i2c_command(Cmd.SHUTDOWN)
 
 
 class StateHandler(APIHandler):
@@ -515,6 +531,8 @@ class Web(tornado.web.Application):
             (r'/api/message/(\d+)/ack',         MessageAckHandler),
             (r'/api/bugreport',                 BugReportHandler),
             (r'/api/reboot',                    RebootHandler),
+            (r'/api/shutdown',                  ShutdownHandler),
+            (r'/api/reset-bbctrl',              ResetBBCtrlHandler),
             (r'/api/hostname',                  HostnameHandler),
             (r'/api/wifi/([^/]+)/(scan|connect|forget|disconnect)',
              WifiHandler),

@@ -178,6 +178,48 @@ module.exports = {
       this.config.admin['virtual-keyboard-enabled'] = this.enableKeyboard
       this.$dispatch('config-changed')
       if (!this.enableKeyboard) this.$api.put('keyboard/hide')
+    },
+
+
+    async shutdown() {
+      let response = await this.$root.open_dialog({
+        header: 'Shutdown System?',
+        body: 'This will completely shut down the controller. You will need to physically power it back on.',
+        buttons: 'Cancel Shutdown'
+      })
+
+      if (response == 'shutdown') {
+        await this.$api.put('shutdown')
+        this.$root.success_dialog('System is shutting down...')
+      }
+    },
+
+
+    async reset_bbctrl() {
+      let response = await this.$root.open_dialog({
+        header: 'Reset BBCtrl?',
+        body: 'This will reset the BBCtrl firmware and restart the system.',
+        buttons: 'Cancel Reset'
+      })
+
+      if (response == 'reset') {
+        await this.$api.put('reset-bbctrl')
+        this.$root.success_dialog('BBCtrl is resetting...')
+      }
+    },
+
+
+    async reboot() {
+      let response = await this.$root.open_dialog({
+        header: 'Reboot System?',
+        body: 'This will restart the controller.',
+        buttons: 'Cancel Reboot'
+      })
+
+      if (response == 'reboot') {
+        await this.$api.put('reboot')
+        this.$root.success_dialog('System is rebooting...')
+      }
     }
   }
 }
