@@ -21,7 +21,6 @@ __pycache__
 *.elf
 *.hex
 /scratch.txt
-
 /bin
 /rootfs
 /share
@@ -54,3 +53,5 @@ updiprog/
 rpipdi-source.tar.gz
 CAMOTICS_DEBUG_SUMMARY.md
 **/build
+\.dev-version
+
