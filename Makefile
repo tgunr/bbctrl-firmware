@@ -197,6 +197,10 @@ ssh-update: pkg
 	scp -i $(SSHID) scripts/update-bbctrl dist/$(TARBALL_NAME).tar.bz2 $(USER)@$(HOST):~/
 	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo ./update-bbctrl ./$(TARBALL_NAME).tar.bz2"
 
+ssh-204: pkg
+	scp -i $(SSHID) scripts/update-bbctrl $(DIR)/bbctrl-2.0.4.tar.bz2 $(USER)@$(HOST):~/
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo ./update-bbctrl ./bbctrl-2.0.4.tar.bz2"
+
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
 	cat $(TEMPLS) >$@
