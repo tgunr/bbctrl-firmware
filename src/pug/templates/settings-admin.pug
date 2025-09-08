@@ -74,6 +74,14 @@ script#settings-admin-template(type="text/x-template")
         @change="change_enable_keyboard")
       label &nbsp; Enable automatic virtual keyboard on local screen.
 
+    h2 Power Control
+    bbutton(primary, :disabled="!authorized", @click="shutdown", text="Shutdown",
+      icon="power-off", title="Completely shut down the system")
+    bbutton(primary, :disabled="!authorized", @click="reboot", text="Reboot",
+      icon="refresh", title="Restart the system")
+    bbutton(primary, :disabled="!authorized", @click="reset_bbctrl", text="Reset BBCtrl",
+      icon="bolt", title="Reset the BBCtrl firmware")
+
 
     dialog(v-ref:upgrade, header="Upgrade Firmware?", buttons="Cancel Upgrade")
       div(slot="body")
