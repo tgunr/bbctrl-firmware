@@ -74,6 +74,12 @@ script#settings-admin-template(type="text/x-template")
         @change="change_enable_keyboard")
       label &nbsp; Enable automatic virtual keyboard on local screen.
 
+    h2 Admin Password
+    p
+      input(type="checkbox", v-model="enableAdminPassword",
+        @change="change_enable_admin_password")
+      label &nbsp; Enable admin password protection for settings and remote access.
+
     h2 Power Control
     bbutton(primary, :disabled="!authorized", @click="shutdown", text="Shutdown",
       icon="power-off", title="Completely shut down the system")

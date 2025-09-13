@@ -525,7 +525,7 @@ class Web(tornado.web.Application):
 
         handlers = [
             (r'/websocket',                     WSConnection),
-            (r'/api/auth/(login|password)',     AuthHandler),
+            (r'/api/auth/(login|password|password-set)',     AuthHandler),
             (r'/api/state(/.*)?',               StateHandler),
             (r'/api/log',                       LogHandler),
             (r'/api/message/(\d+)/ack',         MessageAckHandler),

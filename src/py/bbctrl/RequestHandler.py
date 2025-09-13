@@ -50,6 +50,8 @@ class RequestHandler(tornado.web.RequestHandler):
 
 
     def is_authorized(self):
+        if not self.get_ctrl().config.get('admin', {}).get('admin-password-enabled', False):
+            return True
         sid = self.get_cookie('bbctrl-sid')
         return self.get_ctrl().get_authorized(sid)
 

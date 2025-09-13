@@ -37,6 +37,7 @@ module.exports = {
       password2:       '',
       enableKeyboard: true,
       autoCheckUpgrade: true,
+      enableAdminPassword: false,
     }
   },
 
@@ -49,6 +50,7 @@ module.exports = {
   async ready() {
     this.enableKeyboard   = this.config.admin['virtual-keyboard-enabled']
     this.autoCheckUpgrade = this.config.admin['auto-check-upgrade']
+    this.enableAdminPassword = this.config.admin['admin-password-enabled']
   },
 
 
@@ -178,6 +180,20 @@ module.exports = {
       this.config.admin['virtual-keyboard-enabled'] = this.enableKeyboard
       this.$dispatch('config-changed')
       if (!this.enableKeyboard) this.$api.put('keyboard/hide')
+    },
+
+
+    async change_enable_admin_password() {
+      if (this.enableAdminPassword) {
+        let passwordSet = await this.$api.get('auth/password-set')
+        if (!passwordSet) {
+          await this.$root.error_dialog('Please set an admin password first.')
+          this.enableAdminPassword = false
+          return
+        }
+      }
+      this.config.admin['admin-password-enabled'] = this.enableAdminPassword
+      this.$dispatch('config-changed')
     },
 
 

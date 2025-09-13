@@ -173,6 +173,18 @@ module.exports = new Vue({
     if (this.is_local) this.$kbd.install()
 
     window.addEventListener('hashchange', this.parse_hash)
+
+    // Load config first
+    await this.update()
+
+    // Check login status
+    await this.check_login()
+
+    // If admin password is enabled and not authorized, require login
+    if (this.config.admin && this.config.admin['admin-password-enabled'] && !this.authorized) {
+      await this.login()
+    }
+
     this.connect()
 
     if (!this.webGLSupported) {
@@ -191,8 +203,6 @@ module.exports = new Vue({
         cookie.set_bool('webgl-warning', true)
       }
     }
-
-    this.check_login()
   },
 
 
