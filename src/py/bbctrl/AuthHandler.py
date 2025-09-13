@@ -57,6 +57,15 @@ class AuthHandler(APIHandler):
   def get_login(self): self.write_json(self.is_authorized())
 
 
+  def get_password_set(self):
+      try:
+          s = call_get_output(['getent', 'shadow', get_username()])
+          shadow_hash = s.split(':')[1]
+          self.write_json(shadow_hash not in ('', '!', '*'))
+      except:
+          self.write_json(False)
+
+
   def put_login(self):
     self.not_demo()
 

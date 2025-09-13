@@ -522,6 +522,10 @@
     "auto-check-upgrade": {
       "type": "bool",
       "default": true
+    },
+    "admin-password-enabled": {
+      "type": "bool",
+      "default": false
     }
   },
 
