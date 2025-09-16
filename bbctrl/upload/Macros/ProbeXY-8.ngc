@@ -1,0 +1,59 @@
+(Probe with 1/8 bit XYZ)
+
+(LOGOPEN,log.txt)
+o<globals> call
+
+#<_bitD_in> = .125
+#<_bitR_in> = [#<_bitD> / 2]
+
+; Preamble
+G17 ; use XY plane
+G20 ; inch mode
+G90 ; absolute distance mode
+G40 ; cancel diameter compensation,
+G49 ; cancel length offset
+G54 ; use coordinate system 1
+G80 ; cancel canned cycles
+G94 ; feed/minute mode
+M70 ; Save machine state
+M5  ; Stop spindle
+M70 ; Save modal mode)
+
+M0 (MSG, WARNING: I/O pin checked, tool is 1/4 or less above circle on probe block.)
+
+(Set vuurent spot as home)
+G92 X0 Y0 Z0
+
+(PROBE Z)
+G38.2 Z-1 F#<_slow_probe_in>
+G92 Z0 ; new Z at block height
+G90 G0 Z.25  ; raise it to safe height
+
+(PROBE X)
+G90 G0 X.75 ; move it right 
+G90 G0 Z-[#<_probe_block_z_in> / 2] ; lower bit to half block height
+G38.2 X-1 F#<_slow_probe_in> ; probe left 
+G92 X0 ; new X home
+
+(PROBE Y)
+G91 G0 X.25 Y.75 ; move to safe location above block
+G91 G0 X-.75  ; move X to be behind block
+G38.2 Y-1 F2 ; probe down
+G92 Y0 ; new York home
+
+
+(Adjust for bit)
+G90 G0 X0 Y.0 Z.125 ; bit is now just outside top right corner
+G91 G1 X-#<_bitR_in> Y-#<_bitR_in> F#<_fast_probe_in> ; bit is now centered above the top right corner
+G92 X0 Y0 ; set this as new home
+
+(Adjust XY for block size)
+G92 X#<_x_inner_in> Y#<_y_inner_in> ; XY now think they are here
+
+(Adjust Z for probe block)
+G91 G0 X1 Y1 ; move to safe spot
+G90 G0 Z0 ; move Z to home
+G92 Z#<_probe_block_z_in> ; Z now thinks it is above
+
+M72 (restore modal mode)
+M30

@@ -1,0 +1,54 @@
+o<probe_z> sub
+
+o<globals> call
+o<log> call
+
+G21                           ; Ensure metric units (eliminate modal ambiguity)
+
+#<start_z> = #<_z>
+
+; Keep prior work-offset math for logging/reference
+#<zworkoffset> = [#[5203 + #5220 * 20] + #5213 * #5210]
+#<probe_len> = #<_z_machine_mm> + #<zworkoffset>
+
+; Compute remaining SAFE travel to Z-min soft limit and cap the probe stroke
+#<z_min> = [-#<_z_machine_mm>]                      ; Soft Z-min (e.g. -163)
+#<margin> = 2.0
+#<safe_travel> = [[#<_z_machine_mm> - #<z_min>] - #<margin>]
+
+(LOG, 5203: #5203 5220: #5220 5213: #5213 5210: #5210] W1: [5203 + #5220 * 20] W2: [ #5213 * #5210])
+(LOG, ZO: #<zworkoffset> Z: #<_z> MZ: #<_machine_z> req_probe_len: #<probe_len> zmin: #<z_min> safe: #<safe_travel>)
+
+o900 IF [#<safe_travel> LT 1]
+  (MSG, ERROR: Not enough Z travel to probe. Jog Z up and retry.)
+  M2
+o900 ENDIF
+
+; eff_probe = min(probe_len, safe_travel)
+o901 IF [#<probe_len> GT #<safe_travel>]
+  #<eff_probe> = #<safe_travel>
+o901 ELSE
+  #<eff_probe> = #<probe_len>
+o901 ENDIF
+
+(LOG, Probing down by eff:#<eff_probe> Ffast:#<_fast_probe>)
+(LOG, DEBUG: _fast_probe value before probe: #<_fast_probe>)
+(LOG, DEBUG: Current modal feed rate: #<_feed>)
+
+; Fast probe (capped to remain within soft limits)
+G38.2 Z-#<eff_probe> F#<_fast_probe_mm>
+
+; Back off
+G91 G0 Z3
+
+; Slow probe
+G91 G38.2 G91 Z-4 F#<_slow_probe_mm>
+#<newZ> = #<_z>
+
+; Set Z to probe inset height
+; G92 Z[#<_probe_block_z>]
+G90
+G10 L20 P1  Z[#<_probe_block_z_mm>]
+G0 Z[#<_probe_block_z_mm> + 10] ; Retract
+
+o<probe_z> endsub

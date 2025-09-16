@@ -56,3 +56,5 @@ CAMOTICS_DEBUG_SUMMARY.md
 \.dev-version
 
 1Fconfig.json
+bbctrl/config-*
+bbctrl/firmware/update-orig.tar.bz2

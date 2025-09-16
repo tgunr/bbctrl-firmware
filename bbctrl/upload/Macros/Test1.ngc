@@ -1,0 +1,13 @@
+; Simple Z-Probe - Uses Current Position Directly
+; No coordinate system mixing
+
+(LOGOPEN,log.txt)
+
+o<globals> call
+
+; Use current coordinate system (don't change anything)
+G21 G90 G94 F500
+G53 G0 Z-110
+G53 G0 X91.642 Y157.445
+
+(LOGCLOSE)

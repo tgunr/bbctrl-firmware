@@ -1,0 +1,38 @@
+o<globals> sub
+#<_z_machine_mm> = 163
+#<_z_machine_in> = 6.5
+
+#<_x_machine_mm> = 1219
+#<_x_machine_in> = 48
+
+#<_y_machine_mm> = 816
+#<_y_machine_in> = 32
+
+#<_probe_block_z_mm> = 15.15
+#<_probe_block_z_in> = 0.596
+
+#<_x_outer_mm> = 63.42
+#<_x_outer_in> = 2.5 
+
+#<_x_inner_mm> = 54.0 
+#<_x_inner_in> = 2.124 
+
+#<_y_inner_mm> = 54.0
+#<_y_inner_in> = 2.127
+
+#<_y_outer_mm> = 63.47
+#<_y_outer_in> = 2.5
+
+#<_probe_block_b_mm> = 25    ; distance to move past block for probing (mm)
+#<_probe_block_b_in> = 1    ; distance to move past block for probing (mm)
+
+#<_fast_probe_mm> = 100
+#<_fast_probe_in> = 4
+
+#<_slow_probe_mm> = 25
+#<_slow_probe_in> = 2
+
+(LOG, GLOBALS X:#<_probe_block_x> Y:#<_probe_block_y> Z:#<_probe_block_z> B: #<_probe_block_b>)
+(LOG, COORD: #<_coord_system>)
+(LOG, TOOL: #<_tool_number>)
+o<globals> endsub

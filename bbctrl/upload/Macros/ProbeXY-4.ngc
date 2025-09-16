@@ -1,0 +1,40 @@
+(LOGOPEN,log.txt)
+o<globals> call
+
+G20
+M0 (MSG, Bit within circle at top right of block, Z 1/4" up, ground checked.)
+M70 (Save modal mode)
+G92 X0
+G92 Y0
+G92 Z0
+
+(PROBE Z)
+G38.2 Z-1 F23
+G92 Z0
+G90 G0 Z.25  
+
+(PROBE X)
+G90 G0 X.75 F10
+G90 G1 Z-[#<_probe_block_z_in> / 2]
+G38.2 X-1 F2 
+G92 X0
+
+(PROBE Y)
+G91 G0 X.25 Y.75 F10
+G91 G0 X-.75  
+G38.2 Y-1 F2
+G92 Y0
+
+
+( Adjust for bit)
+G90 G0 X0 Y.0 Z.1 
+G91 G1 X-.125 Y-.125 F10
+G92 X0 Y0
+
+( Adjust for probe block)
+G91 G1 X-#<_x_inner_in> Y-#<_y_inner_in> F20
+M0 (MSG, Remove probe block)
+G91 G1 Z-#<_probe_block_z_in>
+G92 X0 Y0 Z0
+G90 G0 Z1
+M30
