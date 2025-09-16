@@ -250,7 +250,7 @@ tidy:
 	rm -f $(shell find "$(DIR)" -name \*~)
 
 clean: tidy
-	rm -rf build html dist
+	rm -rf build html dist bbkbd
 	@for SUB in $(SUBPROJECTS); do \
 	  $(MAKE) -C $$SUB clean; \
 	done
