@@ -142,11 +142,13 @@ arm-bin: $(CAMOTICS_OUTPUT)
 		echo "Cloning bbkbd..."; \
 		git clone --depth=1 https://github.com/buildbotics/bbkbd.git; \
 	fi
-	@if [ ! -f bbkbd/bbkbd ]; then \
-		echo "Building bbkbd..."; \
-		$(MAKE) -C bbkbd; \
+	@if [ ! -f $(BBKBD_OUTPUT) ]; then \
+		echo "Building bbkbd for ARM..."; \
+		sudo cp -r bbkbd $(CHROOT_DIR)/opt/ && \
+		sudo chroot $(CHROOT_DIR) /bin/bash -c "cd /opt/bbkbd && make clean && make" && \
+		sudo cp $(CHROOT_DIR)/opt/bbkbd/bbkbd bbkbd/; \
 	fi
-	@cp bbkbd/bbkbd bin/
+	@cp $(BBKBD_OUTPUT) bin/
 	@echo "Checking for updiprog..."
 	@if [ ! -d updiprog ]; then \
 		echo "Cloning updiprog..."; \
