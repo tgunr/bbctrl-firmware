@@ -58,6 +58,12 @@ SUBPROJECTS := avr pwr
 SUBPROJECTS := $(patsubst %,src/%,$(SUBPROJECTS))
 $(info SUBPROJECTS="$(SUBPROJECTS)")
 
+# Upload files - only check subfolders and specific files (globals, log)
+UPLOAD_FILES := $(shell find bbctrl/upload -type d -mindepth 1 2>/dev/null) \
+               $(shell test -f bbctrl/upload/globals && echo bbctrl/upload/globals) \
+               $(shell test -f bbctrl/upload/log && echo bbctrl/upload/log) \
+               $(shell find bbctrl/upload/*/  -type f 2>/dev/null | sed 's/ /\\ /g')
+
 WATCH := src/pug src/pug/templates src/stylus src/js src/resources Makefile
 WATCH += src/static
 
@@ -207,6 +213,11 @@ ssh-204: pkg
 	scp -i $(SSHID) scripts/update-bbctrl $(DIR)/bbctrl-2.0.4.tar.bz2 $(USER)@$(HOST):~/
 	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo ./update-bbctrl ./bbctrl-2.0.4.tar.bz2"
 
+ssh-macros: $(UPLOAD_FILES)
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "mkdir -p Downloads/upload"
+	rsync -auvL bbctrl/upload/ $(USER)@$(HOST):Downloads/upload/
+	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo rsync -au Downloads/upload/ upload/"
+
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
 	cat $(TEMPLS) >$@
@@ -262,4 +273,4 @@ dist-clean: clean
 	@if [ -d rpipdi ]; then $(MAKE) -C rpipdi clean; fi
 
 .PHONY: all install clean tidy pkg arm-bin camotics lint pylint jshint
-.PHONY: html resources dist-clean
+.PHONY: html resources dist-clean ssh-macros

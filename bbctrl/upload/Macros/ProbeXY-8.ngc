@@ -2,21 +2,13 @@
 
 (LOGOPEN,log.txt)
 o<globals> call
+o<preamble> call
 
 #<_bitD_in> = .125
 #<_bitR_in> = [#<_bitD> / 2]
 
-; Preamble
-G17 ; use XY plane
+
 G20 ; inch mode
-G90 ; absolute distance mode
-G40 ; cancel diameter compensation,
-G49 ; cancel length offset
-G54 ; use coordinate system 1
-G80 ; cancel canned cycles
-G94 ; feed/minute mode
-M70 ; Save machine state
-M5  ; Stop spindle
 M70 ; Save modal mode)
 
 M0 (MSG, WARNING: I/O pin checked, tool is 1/4 or less above circle on probe block.)

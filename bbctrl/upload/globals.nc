@@ -1,4 +1,7 @@
+o1 (Global Variables)
+
 o<globals> sub
+
 #<_z_machine_mm> = 163
 #<_z_machine_in> = 6.5
 
