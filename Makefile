@@ -20,6 +20,10 @@ BUILD_SCRIPT     := scripts/build-camotics-arm
 CAMOTICS_BUILD_DIR := camotics/build
 CAMOTICS_OUTPUT  := $(CAMOTICS_BUILD_DIR)/camotics.so
 
+# ARM chroot configuration
+CHROOT_DIR := /opt/arm-chroot
+BBKBD_OUTPUT := bbkbd/bbkbd
+
 RSYNC_EXCLUDE := \*.pyc __pycache__ \*.egg-info \\\#* \*~ .\\\#\*
 RSYNC_EXCLUDE := $(patsubst %,--exclude %,$(RSYNC_EXCLUDE))
 RSYNC_OPTS    := $(RSYNC_EXCLUDE) -rv --no-g --delete --force
@@ -251,6 +255,9 @@ clean: tidy
 
 dist-clean: clean
 	rm -rf node_modules
+	@if [ -d bbkbd ]; then $(MAKE) -C bbkbd clean; fi
+	@if [ -d updiprog ]; then $(MAKE) -C updiprog clean; fi
+	@if [ -d rpipdi ]; then $(MAKE) -C rpipdi clean; fi
 
 .PHONY: all install clean tidy pkg arm-bin camotics lint pylint jshint
 .PHONY: html resources dist-clean
