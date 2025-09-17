@@ -1,4 +1,4 @@
-(Probe with 1/8 bit XYZ)
+(Probe with 1/4 bit XYZ)
 
 (LOGOPEN,log.txt)
 o<globals> call
