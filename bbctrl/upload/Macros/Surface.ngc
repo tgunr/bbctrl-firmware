@@ -10,9 +10,9 @@ o1 (SURFACE RECTANGE - ORIGIN IS CENTER OR BOTTOM LEFT)
 ; ASK BEFORE EACH PASS? 1=YES 0=NO
 #<_ask> = 0
 ; WIDTH ON X
-#<_x_width> = 48.0    (9.25 INCHES = ~235MM)
+#<_x_width> = 14.0    (9.25 INCHES = ~235MM)
 ; LENGTH ON Y
-#<_y_length> = 32.0   (7.75 INCHES = ~197MM)
+#<_y_length> = 11.250   (7.75 INCHES = ~197MM)
 ; TOOL DIAMETER
 #<_tool_diameter> = 1  (1.375 INCHES = ~35MM)
 ; DEPTH TO GO DOWN IN ONE PASS USE NEGATIVE
@@ -66,7 +66,7 @@ o200 ENDIF
 o210 IF [#<_dry_run> GT 0]
     #<_curr_depth> = #<_safe_z>          (STAY AT SAFE Z FOR DRY RUN)
     #<_depth> = #<_safe_z>               (STAY AT SAFE Z FOR DRY RUN)
-    M0 (MSG, DRY RUN MODE ENABLED - WILL STAY AT SAFE Z HEIGHT)
+    ; M0 (MSG, DRY RUN MODE ENABLED - WILL STAY AT SAFE Z HEIGHT)
 o210 ELSE
     #<_curr_depth> = 0                   (START AT Z0)
     #<_depth> = #<_pass_depth>           (START AT FIRST PASS DEPTH)
@@ -80,7 +80,7 @@ o211 IF [#<_dry_run> EQ 0]
     o212 IF [#<_total_passes> EQ 0]
         #<_total_passes> = 1
     o212 ENDIF
-    M0 (DEBUG, TOTAL PASSES REQUIRED=#<_total_passes>)
+    ; M0 (DEBUG, TOTAL PASSES REQUIRED=#<_total_passes>)
 o211 ELSE
     #<_total_passes> = 1 (ONLY ONE PASS NEEDED FOR DRY RUN)
 o211 ENDIF
@@ -116,7 +116,7 @@ o100 SUB
         ; DISTANCE DOWN WE NEED TO GO
         #<_dist> = [#<_depth> - #<_curr_depth>]
 
-        M0 (DEBUG, DIST=#<_dist> _curr_depth=#<_curr_depth> DEPTH=#<_depth>)
+        ; M0 (DEBUG, DIST=#<_dist> _curr_depth=#<_curr_depth> DEPTH=#<_depth>)
         o103 IF [#<_units> EQ 1]
             #<_ramp_depth> = -2.2  (5 DEGREE RAMP OVER 25MM - NEGATIVE FOR DOWNWARD)
         o103 ELSE
@@ -125,24 +125,24 @@ o100 SUB
 
         ; ENSURE RAMP DEPTH IS NOT ZERO TO AVOID DIVISION BY ZERO
         o104 IF [#<_ramp_depth> EQ 0]
-            M0 (DEBUG, RAMP DEPTH IS ZERO)
+            ; M0 (DEBUG, RAMP DEPTH IS ZERO)
             #<_ramp_depth> = -0.001 (SET TO A SMALL NEGATIVE VALUE)
         o104 ENDIF
 
         #<_ramps> = [FIX[ABS[#<_dist>] / ABS[#<_ramp_depth>]]]
 
         o105 IF [#<_ramps> EQ 0]
-            M0 (DEBUG, RAMPS IS ZERO)
+            ; M0 (DEBUG, RAMPS IS ZERO)
             #<_ramps> = 1 (ENSURE AT LEAST ONE RAMP)
         o105 ENDIF
 
         ; IF RAMP DEPTH IS LARGER THAN OUR TARGET DISTANCE, USE THE TARGET DISTANCE
         o106 IF [ABS[#<_ramp_depth>] GT ABS[#<_dist>]]
-            M0 (DEBUG, RAMP DEPTH IS LARGER THAN TARGET DISTANCE)
+            ; M0 (DEBUG, RAMP DEPTH IS LARGER THAN TARGET DISTANCE)
             #<_ramp_depth> = #<_dist>
         o106 ENDIF
 
-        M0 (DEBUG, RAMPING DIST=#<_dist> RAMP_DEPTH=#<_ramp_depth> RAMPS=#<_ramps>)
+        ; M0 (DEBUG, RAMPING DIST=#<_dist> RAMP_DEPTH=#<_ramp_depth> RAMPS=#<_ramps>)
 
         ; RAMP DOWN TO DEPTH
         #<_xpos> = #<_xstart>
@@ -192,14 +192,14 @@ o600 WHILE [#<_current_pass> LE #<_total_passes>]
     o603 IF [#<_ask> GT 0]
         M0 (MSG, STARTING PASS #<_current_pass> OF #<_total_passes> TO DEPTH #<_depth> - PRESS CYCLE START TO CONTINUE)
     o603 ELSE
-        M0 (DEBUG, STARTING PASS #<_current_pass> OF #<_total_passes> TO DEPTH #<_depth>)
+        ; M0 (DEBUG, STARTING PASS #<_current_pass> OF #<_total_passes> TO DEPTH #<_depth>)
     o603 ENDIF
 
     ; CALL SUB TO DO RAMPS
     o100 call
 
     ; SURFACING LOGIC - FIXED FOR PROPER X AND Y TRAVEL
-    M0 (DEBUG, STARTING SURFACING PATTERN AT DEPTH=#<_depth>)
+    ; M0 (DEBUG, STARTING SURFACING PATTERN AT DEPTH=#<_depth>)
 
     ; INITIALIZE CURRENT POSITION
     #<_xpos> = #<_xstart>
@@ -259,10 +259,13 @@ o600 WHILE [#<_current_pass> LE #<_total_passes>]
     ; MOVE TO SAFE HEIGHT BETWEEN PASSES (EXCEPT FOR LAST PASS)
     o605 IF [#<_current_pass> LE #<_total_passes>]
         G0 Z#<_safe_z>
-        M0 (DEBUG, COMPLETED PASS #<_current_pass - 1> - MOVING TO SAFE HEIGHT)
+        ; M0 (DEBUG, COMPLETED PASS #<_current_pass - 1> - MOVING TO SAFE HEIGHT)
     o605 ENDIF
 
 o600 ENDWHILE
+
+; Reset Z home in case manually stepping
+G92 Z 0
 
 ; MOVE TO SAFE Z HEIGHT WHEN COMPLETE
 G0 Z#<_safe_z>

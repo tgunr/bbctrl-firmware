@@ -57,4 +57,5 @@ CAMOTICS_DEBUG_SUMMARY.md
 
 1Fconfig.json
 bbctrl/config-*
-bbctrl/firmware/update-orig.tar.bz2
+bbctrl/upload/*.ngc
+
