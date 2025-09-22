@@ -130,7 +130,7 @@ pkg: all $(SUBPROJECTS) arm-bin
 	@cp package.json package.json.backup
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION_WITH_BUILD)"/' package.json
 	#cp -a $(SHARE)/camotics/tpl_lib src/py/bbctrl/
-	./setup.py sdist
+	/usr/bin/python3 setup.py sdist
 	# Restore original package.json
 	@mv package.json.backup package.json
 	# Rename the tarball to use the correct PEP 440 format
