@@ -48,6 +48,7 @@ axis_homing_procedure = '''
   G38.6 %(axis)s[#<_%(axis)s_latch_backoff> * -8]
   G91 G0 G53 %(axis)s[#<_%(axis)s_zero_backoff>]
   G90 G28.3 %(axis)s[#<_%(axis)s_home_position>]
+  G4 P1.0
 '''
 
 stall_homing_procedure = '''
@@ -55,6 +56,7 @@ stall_homing_procedure = '''
   G38.6 %(axis)s[#<_%(axis)s_home_travel>]
   G91 G0 G53 %(axis)s[#<_%(axis)s_zero_backoff>]
   G90 G28.3 %(axis)s[#<_%(axis)s_home_position>]
+  G4 P1.0
 '''
 
 
@@ -67,7 +69,7 @@ class ProgramHome(ProgramMDI):
     log = ctrl.log.get('Home')
     mdi = ''
 
-    if axis is None: axes = 'zxyabc' # TODO This should be configurable
+    if axis is None: axes = 'zxyabc' # Home Z first for safety
     else: axes = '%c' % axis
 
     for axis in axes:
