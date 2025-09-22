@@ -36,6 +36,7 @@ from .ProgramJog import *
 from .ProgramHome import *
 from .ProgramFile import *
 from .ProgramSetPosition import *
+from .ProgramDebug import *
 
 __all__ = ['Mach']
 
@@ -60,6 +61,7 @@ class Mach(Comm):
         self.unpausing = False
         self.stopping = False
         self.next_jog_id = 1
+        self.debug_program = None
 
         ctrl.state.set('cycle', 'idle')
         ctrl.state.add_listener(self._update)
@@ -207,7 +209,11 @@ class Mach(Comm):
         super().queue_command('${}={}'.format(code, value))
 
 
-    def step(self): raise Exception('NYI') # TODO
+    def step(self): 
+        if self.debug_program:
+            return self.debug_program.step()
+        else:
+            raise Exception('Not in debug mode')
 
 
     def stop(self):
@@ -270,3 +276,76 @@ class Mach(Comm):
     def connect(self):
         self.planner.reset()
         super().connect()
+
+
+    # Debug methods
+    def debug_start(self, path):
+        """Start a debug session for the given file"""
+        if self.debug_program:
+            raise Exception('Debug session already active')
+            
+        if not self._is_ready():
+            raise Exception('Machine must be ready to start debugging')
+            
+        try:
+            self.debug_program = ProgramDebug(self.ctrl, path)
+            return self.debug_program.start(self, self.planner)
+        except Exception as e:
+            self.debug_program = None
+            raise
+
+
+    def debug_stop(self):
+        """Stop current debug session"""
+        if self.debug_program:
+            self.debug_program._end_debug_session()
+            self.debug_program = None
+
+
+    def debug_step(self):
+        """Execute one debug step"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        return self.debug_program.step()
+
+
+    def debug_skip(self):
+        """Skip current debug line"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        return self.debug_program.skip()
+
+
+    def debug_skip_to(self, line_number):
+        """Skip to specific line number"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        return self.debug_program.skip_to(line_number)
+
+
+    def debug_continue(self):
+        """Continue normal execution from current debug position"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        result = self.debug_program.continue_execution()
+        self.debug_program = None
+        return result
+
+
+    def debug_set_breakpoint(self, line_number):
+        """Set breakpoint at line number"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        return self.debug_program.set_breakpoint(line_number)
+
+
+    def debug_clear_breakpoint(self, line_number):
+        """Clear breakpoint at line number"""
+        if not self.debug_program:
+            raise Exception('No active debug session')
+        return self.debug_program.clear_breakpoint(line_number)
+
+
+    def is_debugging(self):
+        """Check if currently in debug mode"""
+        return self.debug_program is not None

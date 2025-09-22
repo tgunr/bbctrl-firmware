@@ -67,6 +67,7 @@ module.exports = new Vue({
     'view-control':   require('./view-control'),
     'view-viewer':    require('./view-viewer'),
     'view-editor':    require('./view-editor'),
+    'view-debug':     require('./view-debug'),
     'view-settings':  require('./view-settings'),
     'view-files':     require('./view-files'),
     'view-camera':    {template: '#view-camera-template'},
@@ -393,6 +394,12 @@ module.exports = new Vue({
     edit(path) {
       this.select_path(path)
       location.hash = 'editor'
+    },
+
+
+    debug(path) {
+      this.select_path(path)
+      location.hash = 'debug'
     },
 
 
