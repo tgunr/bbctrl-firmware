@@ -11,8 +11,8 @@ o<globals> sub
 #<_y_machine_mm> = 816
 #<_y_machine_in> = 32
 
-#<_probe_block_z_mm> = 15.607
-#<_probe_block_z_in> = 0.61
+#<_probe_block_z_mm> = 18.607
+#<_probe_block_z_in> = 0.718
 
 #<_x_outer_mm> = 63.42
 #<_x_outer_in> = 2.5 
