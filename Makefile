@@ -219,7 +219,7 @@ ssh-macros: $(UPLOAD_FILES)
 	ssh -i $(SSHID) -t $(USER)@$(HOST) "sudo rsync -au Downloads/upload/ upload/"
 
 ssh-sync:
-	rsync -auvL $(USER)@$(HOST):upload/ bbctrl/upload/
+	rsync -auv --exclude=3cl $(USER)@$(HOST):upload/ bbctrl/upload/ 
 
 build/templates.pug: $(TEMPLS)
 	mkdir -p build
