@@ -46,7 +46,7 @@ G38.2 G91 Z-6 F#<_slow_probe_mm>
 #<newZ> = #<_z>
 
 ; Set Z to probe inset height
-; G92 Z[#<_probe_block_z>]
+;G92 Z[#<_probe_block_z>]
 G10 L20 P1  Z[#<_probe_block_z_mm>]
 G91 G0 Z25 ; Retract
 
