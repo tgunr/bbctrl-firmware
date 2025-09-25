@@ -157,6 +157,9 @@ script#view-control-template(type="text/x-template")
           bbutton(title="Edit program.", @click="edit", text="Edit",
             :disabled="!active.path")
 
+          bbutton(title="Debug program.", @click="debug", text="Debug",
+            :disabled="!active.path || !is_ready", icon="bug")
+
           bbutton(title="Open 3D view.", @click="view", icon="eye", text="View",
             v-if="$root.webGLSupported", :disabled="!active.path")
 

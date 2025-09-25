@@ -1,3 +1,5 @@
+o1 (Probe touch block fo Z)
+
 o<probe_z> sub
 
 o<globals> call
@@ -39,15 +41,16 @@ o901 ENDIF
 G38.2 Z-#<eff_probe> F#<_fast_probe_mm>
 
 ; Back off
-G91 G0 Z5
+G91 G0 Z3
 
 ; Slow probe
-G38.2 G91 Z-6 F#<_slow_probe_mm>
+G91 G38.2 G91 Z-4 F#<_slow_probe_mm>
 #<newZ> = #<_z>
 
 ; Set Z to probe inset height
-;G92 Z[#<_probe_block_z>]
+; G92 Z[#<_probe_block_z>]
+G90
 G10 L20 P1  Z[#<_probe_block_z_mm>]
-G91 G0 Z25 ; Retract
+G0 Z[#<_probe_block_z_mm> + 10] ; Retract
 
 o<probe_z> endsub

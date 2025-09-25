@@ -1,0 +1,12 @@
+o<preamble> call
+o<globals> call
+#<search_velocity> = 450
+#<home_travel> = 25
+#<zero_backoff> = 5
+#<home_position> = 1.5
+
+G21 ; mm
+G28.2 Z0 F#<search_velocity>      ; Mark axis unhomed, set search feed rate  
+G38.6 Z#<home_travel>             ; Seek until stall detected
+G91 G0 G53 Z#<zero_backoff>       ; Rapid move to zero backoff position
+G90 G28.3 [#<home_position>       ; Set home position and mark axis homed

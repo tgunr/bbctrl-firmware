@@ -316,6 +316,7 @@ module.exports = {
 
 
     edit() {this.$root.edit(this.active.path)},
+    debug() {this.$root.debug(this.active.path)},
     view() {this.$root.view(this.active.path)},
 
 

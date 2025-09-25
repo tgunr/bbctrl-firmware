@@ -368,6 +368,45 @@ class StepHandler(APIHandler):
     def put(self): self.get_ctrl().mach.step()
 
 
+class DebugStartHandler(APIHandler):
+    def put(self, path):
+        path = self.get_ctrl().fs.validate_path(path)
+        self.get_ctrl().mach.debug_start(path)
+
+
+class DebugStopHandler(APIHandler):
+    def put(self): self.get_ctrl().mach.debug_stop()
+
+
+class DebugStepHandler(APIHandler):
+    def put(self): self.get_ctrl().mach.debug_step()
+
+
+class DebugSkipHandler(APIHandler):
+    def put(self): self.get_ctrl().mach.debug_skip()
+
+
+class DebugSkipToHandler(APIHandler):
+    def put(self, line_number):
+        line_num = int(line_number)
+        self.get_ctrl().mach.debug_skip_to(line_num)
+
+
+class DebugContinueHandler(APIHandler):
+    def put(self): self.get_ctrl().mach.debug_continue()
+
+
+class DebugBreakpointHandler(APIHandler):
+    def put(self, action, line_number):
+        line_num = int(line_number)
+        if action == 'set':
+            self.get_ctrl().mach.debug_set_breakpoint(line_num)
+        elif action == 'clear':
+            self.get_ctrl().mach.debug_clear_breakpoint(line_num)
+        else:
+            raise HTTPError(400, 'Invalid breakpoint action')
+
+
 class PositionHandler(APIHandler):
     def put(self, axis):
         self.get_ctrl().mach.set_position(axis, float(self.json['position']))
@@ -558,6 +597,13 @@ class Web(tornado.web.Application):
             (r'/api/unpause',                   UnpauseHandler),
             (r'/api/pause/optional',            OptionalPauseHandler),
             (r'/api/step',                      StepHandler),
+            (r'/api/debug/start/(.*)',          DebugStartHandler),
+            (r'/api/debug/stop',                DebugStopHandler),
+            (r'/api/debug/step',                DebugStepHandler),
+            (r'/api/debug/skip',                DebugSkipHandler),
+            (r'/api/debug/skip-to/(\d+)',       DebugSkipToHandler),
+            (r'/api/debug/continue',            DebugContinueHandler),
+            (r'/api/debug/breakpoint/(set|clear)/(\d+)', DebugBreakpointHandler),
             (r'/api/position/([xyzabcXYZABC])', PositionHandler),
             (r'/api/override/feed/([\d.]+)',    OverrideFeedHandler),
             (r'/api/override/speed/([\d.]+)',   OverrideSpeedHandler),

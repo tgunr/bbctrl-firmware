@@ -57,7 +57,12 @@ class State(object):
             'speed': 0,
             'sid': str(uuid.uuid4()),
             'demo': ctrl.args.demo,
-            'rpi_model': util.get_model()
+            'rpi_model': util.get_model(),
+            # Debug state variables
+            'debug_mode': False,
+            'debug_file': '',
+            'debug_current_line': -1,
+            'debug_breakpoints': []
         }
 
         # Add computed variable callbacks for each motor.
