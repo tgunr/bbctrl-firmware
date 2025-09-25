@@ -11,12 +11,12 @@ o1 (SURFACE RECTANGE - ORIGIN IS CENTER OR BOTTOM LEFT)
 ; WIDTH ON X
 #<_x_width> = 7.0    (9.25 INCHES = ~235MM)
 ; LENGTH ON Y
-#<_y_length> = 8.0   (7.75 INCHES = ~197MM)
+#<_y_length> = 5.5   (7.75 INCHES = ~197MM)
 ; TOOL DIAMETER
 #<_tool_diameter> = 1  (1.375 INCHES = ~35MM)
 ; DEPTH TO GO DOWN IN ONE PASS USE NEGATIVE
 #<_pass_depth> = -0.010
-#<_final_depth> = -0.010
+#<_final_depth> = -0.2
 ; STEPOVER PERCENTAGE 75-80% RECOMMENDED
 #<_stepover_percent> = 70
 ; CALCULATE STEPOVER FROM TOOL DIAMETER AND PERCENTAGE

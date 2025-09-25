@@ -1,1 +1,4 @@
+
+G92.1 ; clear all offsets
+
 o<probe_z> call
