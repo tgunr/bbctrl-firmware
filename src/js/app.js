@@ -30,6 +30,7 @@ let cookie  = require('./cookie')
 let Sock    = require('./sock')
 let util    = require('./util')
 let Program = require('./program')
+let ProgramControls = require('./program-controls')
 
 
 module.exports = new Vue({
@@ -56,7 +57,8 @@ module.exports = new Vue({
       errorMessage: '',
       checkedUpgrade: false,
       latestVersion: '',
-      webGLSupported: util.webgl_supported()
+      webGLSupported: util.webgl_supported(),
+      programControls: null
     }
   },
 
@@ -172,6 +174,10 @@ module.exports = new Vue({
     this.$api.set_error_handler(this.error_dialog)
 
     if (this.is_local) this.$kbd.install()
+
+    // Initialize program control keyboard shortcuts
+    this.programControls = new ProgramControls(this.$api, this)
+    this.programControls.install()
 
     window.addEventListener('hashchange', this.parse_hash)
 
